@@ -1,0 +1,21 @@
+# Server
+PORT=3001
+NODE_ENV=development
+
+# Database (Prisma)
+DATABASE_URL="postgresql://roommatch:roommatch@zero-kalendar-prod-db.cu3w4iyiit9f.us-east-1.rds.amazonaws.com:5432/roommatch?schema=public"
+
+# File Upload
+UPLOAD_PATH=./uploads
+MAX_FILE_SIZE=5242880
+
+# CORS
+CORS_ORIGIN=http://localhost:4200
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+
+# Firebase Admin SDK
+FIREBASE_PROJECT_ID=room-match-cl
+FIREBASE_SERVICE_ACCOUNT_PATH=./room-match-cl-firebase-adminsdk-fbsvc-ad5048b30d.json

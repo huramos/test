@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Authentication helper function
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user is the owner of the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Get user data
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Check if user has specific role
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+
+    // Check if user is provider
+    function isProvider() {
+      return hasRole('PROVIDER');
+    }
+
+    // Check if user is seller
+    function isSeller() {
+      return hasRole('SELLER');
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own profile OR anyone can read seller public data
+      allow read: if isOwner(userId) ||
+                     (resource.data.role == 'SELLER' && resource.data.storeEnabled == true);
+      // Users can write their own profile
+      allow write: if isOwner(userId);
+      // Allow create on registration
+      allow create: if request.auth.uid == userId;
+    }
+
+    // Products collection
+    match /products/{productId} {
+      // Anyone authenticated can read products OR public can read active products
+      allow read: if isAuthenticated() || resource.data.isActive == true;
+      // Providers can create products
+      allow create: if isProvider() && request.resource.data.providerId == request.auth.uid;
+      // Providers can update/delete their own products
+      allow update, delete: if isProvider() && resource.data.providerId == request.auth.uid;
+    }
+
+    // Seller products (products subscribed by sellers)
+    match /seller_products/{sellerProductId} {
+      // Public can read published products, sellers can read their own
+      allow read: if resource.data.isPublished == true ||
+                     (isAuthenticated() && resource.data.sellerId == request.auth.uid);
+      // Sellers can create subscriptions for themselves
+      allow create: if isSeller() && request.resource.data.sellerId == request.auth.uid;
+      // Sellers can update/delete their own subscriptions
+      allow update, delete: if isSeller() && resource.data.sellerId == request.auth.uid;
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      // Order participants can read: provider, seller, or customer
+      allow read: if isAuthenticated() && (
+        resource.data.providerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.customerId == request.auth.uid
+      );
+
+      // Authenticated users and guests can create orders
+      allow create: if request.auth != null || true;
+
+      // Sellers and providers can update order status
+      allow update: if isAuthenticated() && (
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.providerId == request.auth.uid
+      );
+    }
+
+    // Sales collection
+    match /sales/{saleId} {
+      // Sellers can read their own sales
+      allow read: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
+      // Sellers can update their own sales (to mark items as part of purchase orders)
+      allow update: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
+      // Only backend can create/delete sales (via Cloud Functions)
+      allow create, delete: if false;
+    }
+
+    // Purchase Orders collection (seller -> provider)
+    match /purchase_orders/{purchaseOrderId} {
+      // Sellers can read their own purchase orders
+      allow read: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
+      // Providers can read purchase orders sent to them
+      allow read: if isAuthenticated() && resource.data.providerId == request.auth.uid;
+      // Sellers can create purchase orders for themselves
+      allow create: if isSeller() && request.resource.data.sellerId == request.auth.uid;
+      // Sellers and providers can update purchase order status
+      allow update: if isAuthenticated() && (
+        resource.data.sellerId == request.auth.uid ||
+        resource.data.providerId == request.auth.uid
+      );
+      // Only sellers can delete their own purchase orders (if pending)
+      allow delete: if isSeller() &&
+                       resource.data.sellerId == request.auth.uid &&
+                       resource.data.status == 'PENDING';
+    }
+
+    // Payments collection
+    match /payments/{paymentId} {
+      // Users can read their own payment intents
+      allow read: if isAuthenticated() && resource.data.buyerId == request.auth.uid;
+      // Users can create payment intents
+      allow create: if isAuthenticated() && request.resource.data.buyerId == request.auth.uid;
+      // Only backend can update/delete payments (via webhooks)
+      allow update, delete: if false;
+    }
+
+    // Guest customers collection
+    match /guest_customers/{guestId} {
+      // Only backend can read/write guest customers
+      allow read, write: if false;
+    }
+
+    // Default deny rule for any other collection
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

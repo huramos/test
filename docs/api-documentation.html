@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoomMatch API Documentation</title>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css">
+  <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png" sizes="32x32">
+  <style>
+    html { box-sizing: border-box; overflow-y: scroll; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui .info { margin: 30px 0; }
+    .swagger-ui .info .title { color: #10b981; }
+    .swagger-ui .scheme-container { background: #f8fafc; padding: 20px 0; }
+    .swagger-ui .btn.authorize { background-color: #10b981; border-color: #10b981; }
+    .swagger-ui .btn.authorize:hover { background-color: #059669; }
+    .swagger-ui .opblock.opblock-post { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+    .swagger-ui .opblock.opblock-post .opblock-summary-method { background: #10b981; }
+    .swagger-ui .opblock.opblock-get { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+    .swagger-ui .opblock.opblock-get .opblock-summary-method { background: #3b82f6; }
+    .swagger-ui .opblock.opblock-put { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+    .swagger-ui .opblock.opblock-put .opblock-summary-method { background: #f59e0b; }
+    .swagger-ui .opblock.opblock-patch { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+    .swagger-ui .opblock.opblock-patch .opblock-summary-method { background: #8b5cf6; }
+    .swagger-ui .opblock.opblock-delete { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: #ef4444; }
+    .custom-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .custom-header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+    .custom-header p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+    .custom-header .version {
+      background: rgba(255,255,255,0.2);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+    .info-banner {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 15px 20px;
+      margin: 20px 40px;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+      color: #92400e;
+    }
+    .info-banner strong { color: #78350f; }
+    .info-banner code {
+      background: rgba(0,0,0,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="custom-header">
+    <div>
+      <h1>🏠 RoomMatch API</h1>
+      <p>API para conectar propietarios con personas que buscan compartir arriendo</p>
+    </div>
+    <span class="version">v1.0.0</span>
+  </div>
+
+  <div class="info-banner">
+    <strong>Servidor de desarrollo:</strong> <code>http://localhost:3000/api</code><br>
+    <strong>Credenciales de prueba:</strong><br>
+    • Admin: <code>admin@roommatch.cl</code> / <code>password123</code><br>
+    • Propietario: <code>carlos.mendez@email.com</code> / <code>password123</code><br>
+    • Roomie: <code>ana.torres@email.com</code> / <code>password123</code>
+  </div>
+
+  <div id="swagger-ui"></div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function() {
+      const spec = {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "RoomMatch API",
+          "version": "1.0.0",
+          "description": "API REST para la plataforma RoomMatch que conecta propietarios con personas que buscan compartir arriendo en Chile.\n\n## Autenticación\nLa API utiliza JWT (JSON Web Tokens) para autenticación. Incluye el token en el header:\n```\nAuthorization: Bearer <token>\n```\n\n## Roles\n- **ADMIN**: Administrador del sistema\n- **PROPIETARIO**: Dueño de propiedades\n- **ROOMIE**: Usuario que busca o tiene habitación\n\n## Flujo típico\n1. Un **Roomie** se registra y completa su perfil\n2. Busca propiedades/habitaciones disponibles\n3. Envía una **solicitud** al propietario\n4. El **Propietario** acepta o rechaza\n5. Si acepta, se crea un **Match** y una conversación\n6. Ambos pueden comunicarse por mensajes\n7. Al finalizar, pueden calificarse mutuamente",
+          "contact": {
+            "name": "RoomMatch Team",
+            "email": "soporte@roommatch.cl"
+          }
+        },
+        "servers": [
+          {
+            "url": "http://localhost:3000/api",
+            "description": "Servidor de desarrollo"
+          },
+          {
+            "url": "https://api.roommatch.cl/api",
+            "description": "Servidor de producción"
+          }
+        ],
+        "tags": [
+          { "name": "Auth", "description": "Autenticación y gestión de sesiones" },
+          { "name": "Users", "description": "Gestión de usuarios y perfiles de roomie" },
+          { "name": "Properties", "description": "Gestión de propiedades (departamentos, casas, etc.)" },
+          { "name": "Rooms", "description": "Gestión de habitaciones dentro de propiedades" },
+          { "name": "Requests", "description": "Solicitudes de arriendo entre roomies y propietarios" },
+          { "name": "Matches", "description": "Matches confirmados y gestión de contratos" },
+          { "name": "Messages", "description": "Sistema de mensajería entre usuarios" }
+        ],
+        "paths": {
+          "/auth/login": {
+            "post": {
+              "tags": ["Auth"],
+              "summary": "Iniciar sesión",
+              "description": "Autentica un usuario con email y contraseña, devuelve un token JWT válido por 7 días",
+              "security": [],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/LoginRequest" },
+                    "examples": {
+                      "propietario": {
+                        "summary": "Login como Propietario",
+                        "value": { "email": "carlos.mendez@email.com", "password": "password123" }
+                      },
+                      "roomie": {
+                        "summary": "Login como Roomie",
+                        "value": { "email": "ana.torres@email.com", "password": "password123" }
+                      },
+                      "admin": {
+                        "summary": "Login como Admin",
+                        "value": { "email": "admin@roommatch.cl", "password": "password123" }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Login exitoso",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/AuthResponse" }
+                    }
+                  }
+                },
+                "401": {
+                  "description": "Credenciales inválidas",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/Error" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/auth/register": {
+            "post": {
+              "tags": ["Auth"],
+              "summary": "Registrar nuevo usuario",
+              "description": "Crea una nueva cuenta. Los roles permitidos son PROPIETARIO y ROOMIE. Para roomies, especificar hasRoom indica si ofrece o busca habitación.",
+              "security": [],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/RegisterRequest" },
+                    "examples": {
+                      "roomie_busca": {
+                        "summary": "Roomie que busca habitación",
+                        "value": {
+                          "email": "nuevo.roomie@email.com",
+                          "password": "password123",
+                          "firstName": "María",
+                          "lastName": "López",
+                          "phone": "+56912345678",
+                          "role": "ROOMIE",
+                          "hasRoom": false
+                        }
+                      },
+                      "roomie_ofrece": {
+                        "summary": "Roomie que ofrece habitación",
+                        "value": {
+                          "email": "roomie.ofrece@email.com",
+                          "password": "password123",
+                          "firstName": "Pedro",
+                          "lastName": "González",
+                          "phone": "+56987654321",
+                          "role": "ROOMIE",
+                          "hasRoom": true
+                        }
+                      },
+                      "propietario": {
+                        "summary": "Propietario",
+                        "value": {
+                          "email": "nuevo.propietario@email.com",
+                          "password": "password123",
+                          "firstName": "Carlos",
+                          "lastName": "Sánchez",
+                          "phone": "+56955555555",
+                          "role": "PROPIETARIO"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": {
+                  "description": "Usuario registrado exitosamente",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/AuthResponse" }
+                    }
+                  }
+                },
+                "409": { "description": "El email ya está registrado" }
+              }
+            }
+          },
+          "/auth/me": {
+            "get": {
+              "tags": ["Auth"],
+              "summary": "Obtener usuario actual",
+              "description": "Devuelve los datos del usuario autenticado incluyendo su perfil de roomie si aplica",
+              "responses": {
+                "200": {
+                  "description": "Datos del usuario",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                },
+                "401": { "description": "No autorizado" }
+              }
+            }
+          },
+          "/auth/change-password": {
+            "post": {
+              "tags": ["Auth"],
+              "summary": "Cambiar contraseña",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "required": ["currentPassword", "newPassword"],
+                      "properties": {
+                        "currentPassword": { "type": "string", "description": "Contraseña actual" },
+                        "newPassword": { "type": "string", "minLength": 6, "description": "Nueva contraseña (mín. 6 caracteres)" }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Contraseña actualizada correctamente" },
+                "400": { "description": "Contraseña actual incorrecta" }
+              }
+            }
+          },
+          "/auth/refresh": {
+            "post": {
+              "tags": ["Auth"],
+              "summary": "Refrescar token",
+              "description": "Genera un nuevo token JWT sin necesidad de volver a ingresar credenciales",
+              "responses": {
+                "200": {
+                  "description": "Nuevo token generado",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "token": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/users": {
+            "get": {
+              "tags": ["Users"],
+              "summary": "Listar usuarios (Admin)",
+              "description": "Lista todos los usuarios con filtros opcionales. Solo accesible para administradores.",
+              "parameters": [
+                { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["ADMIN", "PROPIETARIO", "ROOMIE"] }, "description": "Filtrar por rol" },
+                { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "PENDING", "BANNED"] }, "description": "Filtrar por estado" },
+                { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Buscar por email" },
+                { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Lista paginada de usuarios",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/PaginatedUsers" }
+                    }
+                  }
+                },
+                "403": { "description": "Solo administradores" }
+              }
+            }
+          },
+          "/users/roomies": {
+            "get": {
+              "tags": ["Users"],
+              "summary": "Buscar roomies",
+              "description": "Lista roomies activos. Útil para propietarios que buscan inquilinos o roomies que buscan compañeros.",
+              "parameters": [
+                { "name": "hasRoom", "in": "query", "schema": { "type": "boolean" }, "description": "true: tiene habitación para ofrecer, false: busca habitación" },
+                { "name": "comuna", "in": "query", "schema": { "type": "string" }, "description": "Comuna preferida" },
+                { "name": "budgetMin", "in": "query", "schema": { "type": "number" }, "description": "Presupuesto mínimo CLP" },
+                { "name": "budgetMax", "in": "query", "schema": { "type": "number" }, "description": "Presupuesto máximo CLP" },
+                { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de roomies con sus perfiles" }
+              }
+            }
+          },
+          "/users/profile/roomie": {
+            "get": {
+              "tags": ["Users"],
+              "summary": "Obtener mi perfil de roomie",
+              "description": "Devuelve el perfil completo del roomie autenticado",
+              "responses": {
+                "200": {
+                  "description": "Perfil de roomie",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/RoomieProfile" }
+                    }
+                  }
+                }
+              }
+            },
+            "patch": {
+              "tags": ["Users"],
+              "summary": "Actualizar mi perfil de roomie",
+              "description": "Actualiza preferencias, estilo de vida, intereses, etc.",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/UpdateRoomieProfile" },
+                    "example": {
+                      "hasRoom": false,
+                      "bio": "Profesional buscando un lugar tranquilo",
+                      "preferences": {
+                        "preferredLocations": ["Providencia", "Las Condes", "Ñuñoa"],
+                        "budgetMin": 300000,
+                        "budgetMax": 500000,
+                        "petFriendly": true,
+                        "smokingAllowed": false
+                      },
+                      "interests": ["yoga", "lectura", "cocina"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Perfil actualizado" }
+              }
+            }
+          },
+          "/users/{id}": {
+            "get": {
+              "tags": ["Users"],
+              "summary": "Obtener usuario por ID",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Datos del usuario" },
+                "404": { "description": "Usuario no encontrado" }
+              }
+            },
+            "patch": {
+              "tags": ["Users"],
+              "summary": "Actualizar usuario",
+              "description": "Actualiza datos básicos del usuario. Solo el propio usuario o admin puede actualizar.",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/UpdateUser" }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Usuario actualizado" }
+              }
+            },
+            "delete": {
+              "tags": ["Users"],
+              "summary": "Eliminar usuario (Admin)",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Usuario eliminado" }
+              }
+            }
+          },
+          "/users/{id}/status": {
+            "patch": {
+              "tags": ["Users"],
+              "summary": "Actualizar estado de usuario (Admin)",
+              "description": "Permite activar, desactivar o banear usuarios",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "required": ["status"],
+                      "properties": {
+                        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "PENDING", "BANNED"] }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Estado actualizado" }
+              }
+            }
+          },
+          "/properties": {
+            "get": {
+              "tags": ["Properties"],
+              "summary": "Listar propiedades",
+              "description": "Lista propiedades disponibles con múltiples filtros. Por defecto solo muestra propiedades con estado AVAILABLE.",
+              "parameters": [
+                { "name": "comuna", "in": "query", "schema": { "type": "string" }, "description": "Ej: Providencia, Las Condes, Ñuñoa" },
+                { "name": "city", "in": "query", "schema": { "type": "string" }, "description": "Ciudad" },
+                { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["APARTMENT", "HOUSE", "STUDIO", "LOFT", "SHARED_APARTMENT"] } },
+                { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["AVAILABLE", "OCCUPIED", "INACTIVE"] } },
+                { "name": "priceMin", "in": "query", "schema": { "type": "number" }, "description": "Arriendo mínimo CLP" },
+                { "name": "priceMax", "in": "query", "schema": { "type": "number" }, "description": "Arriendo máximo CLP" },
+                { "name": "rooms", "in": "query", "schema": { "type": "integer" }, "description": "Mín. habitaciones disponibles" },
+                { "name": "bathrooms", "in": "query", "schema": { "type": "integer" }, "description": "Mín. baños" },
+                { "name": "petsAllowed", "in": "query", "schema": { "type": "boolean" }, "description": "Permite mascotas" },
+                { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Lista paginada de propiedades",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/PaginatedProperties" }
+                    }
+                  }
+                }
+              }
+            },
+            "post": {
+              "tags": ["Properties"],
+              "summary": "Crear propiedad (Propietario)",
+              "description": "Crea una nueva propiedad. Solo accesible para propietarios.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/CreateProperty" },
+                    "example": {
+                      "title": "Departamento en Providencia",
+                      "description": "Hermoso depto cerca del metro",
+                      "type": "APARTMENT",
+                      "address": {
+                        "street": "Av. Providencia",
+                        "number": "1234",
+                        "apartment": "501",
+                        "comuna": "Providencia",
+                        "city": "Santiago",
+                        "region": "Metropolitana"
+                      },
+                      "features": {
+                        "totalRooms": 3,
+                        "availableRooms": 2,
+                        "bathrooms": 2,
+                        "squareMeters": 85,
+                        "hasWifi": true,
+                        "hasParking": true
+                      },
+                      "rules": {
+                        "petsAllowed": false,
+                        "smokingAllowed": false
+                      },
+                      "monthlyRent": 850000,
+                      "commonExpenses": 80000,
+                      "depositMonths": 1
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Propiedad creada" }
+              }
+            }
+          },
+          "/properties/my": {
+            "get": {
+              "tags": ["Properties"],
+              "summary": "Mis propiedades (Propietario)",
+              "description": "Lista todas las propiedades del propietario autenticado",
+              "responses": {
+                "200": { "description": "Lista de propiedades propias" }
+              }
+            }
+          },
+          "/properties/stats": {
+            "get": {
+              "tags": ["Properties"],
+              "summary": "Estadísticas de propiedades",
+              "description": "Estadísticas de las propiedades del usuario (para propietarios) o globales (para admin)",
+              "responses": {
+                "200": {
+                  "description": "Estadísticas",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/PropertyStats" },
+                      "example": {
+                        "total": 5,
+                        "available": 3,
+                        "occupied": 2,
+                        "inactive": 0,
+                        "totalViews": 150
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/properties/{id}": {
+            "get": {
+              "tags": ["Properties"],
+              "summary": "Obtener propiedad por ID",
+              "description": "Devuelve detalles completos de la propiedad incluyendo habitaciones. Incrementa el contador de vistas.",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Datos completos de la propiedad" }
+              }
+            },
+            "patch": {
+              "tags": ["Properties"],
+              "summary": "Actualizar propiedad",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/UpdateProperty" }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Propiedad actualizada" }
+              }
+            },
+            "delete": {
+              "tags": ["Properties"],
+              "summary": "Eliminar propiedad",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Propiedad eliminada" }
+              }
+            }
+          },
+          "/properties/{id}/status": {
+            "patch": {
+              "tags": ["Properties"],
+              "summary": "Actualizar estado de propiedad",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string", "enum": ["AVAILABLE", "OCCUPIED", "INACTIVE"] }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Estado actualizado" }
+              }
+            }
+          },
+          "/properties/{id}/verify": {
+            "patch": {
+              "tags": ["Properties"],
+              "summary": "Verificar propiedad (Admin)",
+              "description": "Marca una propiedad como verificada por el equipo de RoomMatch",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Propiedad verificada" }
+              }
+            }
+          },
+          "/rooms": {
+            "get": {
+              "tags": ["Rooms"],
+              "summary": "Listar habitaciones",
+              "description": "Lista habitaciones disponibles con filtros",
+              "parameters": [
+                { "name": "propertyId", "in": "query", "schema": { "type": "string", "format": "uuid" }, "description": "Filtrar por propiedad" },
+                { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["AVAILABLE", "RESERVED", "OCCUPIED", "UNAVAILABLE"] } },
+                { "name": "priceMin", "in": "query", "schema": { "type": "number" } },
+                { "name": "priceMax", "in": "query", "schema": { "type": "number" } },
+                { "name": "hasPrivateBathroom", "in": "query", "schema": { "type": "boolean" } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de habitaciones" }
+              }
+            },
+            "post": {
+              "tags": ["Rooms"],
+              "summary": "Crear habitación (Propietario)",
+              "description": "Agrega una habitación a una propiedad existente",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/CreateRoom" },
+                    "example": {
+                      "propertyId": "uuid-de-propiedad",
+                      "name": "Habitación Principal",
+                      "description": "Habitación amplia con vista al parque",
+                      "squareMeters": 15,
+                      "bedType": "DOUBLE",
+                      "hasPrivateBathroom": true,
+                      "hasCloset": true,
+                      "hasDesk": true,
+                      "monthlyRent": 350000
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Habitación creada" }
+              }
+            }
+          },
+          "/rooms/property/{propertyId}": {
+            "get": {
+              "tags": ["Rooms"],
+              "summary": "Habitaciones de una propiedad",
+              "parameters": [
+                { "name": "propertyId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de habitaciones de la propiedad" }
+              }
+            }
+          },
+          "/rooms/{id}": {
+            "get": {
+              "tags": ["Rooms"],
+              "summary": "Obtener habitación por ID",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Datos de la habitación" }
+              }
+            },
+            "patch": {
+              "tags": ["Rooms"],
+              "summary": "Actualizar habitación",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/UpdateRoom" }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Habitación actualizada" }
+              }
+            },
+            "delete": {
+              "tags": ["Rooms"],
+              "summary": "Eliminar habitación",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Habitación eliminada" }
+              }
+            }
+          },
+          "/requests": {
+            "post": {
+              "tags": ["Requests"],
+              "summary": "Crear solicitud (Roomie)",
+              "description": "Un roomie envía una solicitud para arrendar una habitación. La solicitud expira en 7 días si no hay respuesta.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/CreateRequest" },
+                    "example": {
+                      "roomId": "uuid-de-habitacion",
+                      "message": "Hola, me interesa la habitación. Soy profesional, trabajo de 9 a 6 y busco un lugar tranquilo.",
+                      "proposedMoveIn": "2024-02-01",
+                      "proposedStayMonths": 12
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Solicitud creada" },
+                "400": { "description": "La habitación no está disponible" },
+                "409": { "description": "Ya tienes una solicitud pendiente para esta habitación" }
+              }
+            }
+          },
+          "/requests/my": {
+            "get": {
+              "tags": ["Requests"],
+              "summary": "Mis solicitudes enviadas (Roomie)",
+              "description": "Lista las solicitudes que el roomie ha enviado",
+              "parameters": [
+                { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "EXPIRED"] } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de solicitudes enviadas" }
+              }
+            }
+          },
+          "/requests/received": {
+            "get": {
+              "tags": ["Requests"],
+              "summary": "Solicitudes recibidas (Propietario)",
+              "description": "Lista las solicitudes recibidas para las propiedades del propietario",
+              "parameters": [
+                { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "EXPIRED"] } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de solicitudes recibidas con datos del roomie" }
+              }
+            }
+          },
+          "/requests/stats": {
+            "get": {
+              "tags": ["Requests"],
+              "summary": "Estadísticas de solicitudes",
+              "responses": {
+                "200": {
+                  "description": "Estadísticas",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/RequestStats" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/requests/{id}": {
+            "get": {
+              "tags": ["Requests"],
+              "summary": "Obtener solicitud por ID",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Datos de la solicitud" }
+              }
+            }
+          },
+          "/requests/{id}/respond": {
+            "post": {
+              "tags": ["Requests"],
+              "summary": "Responder solicitud (Propietario)",
+              "description": "Acepta o rechaza una solicitud. Si se acepta:\n- Se crea automáticamente un Match\n- Se crea una conversación entre propietario y roomie\n- La habitación cambia a estado RESERVED\n- Las demás solicitudes pendientes para esa habitación se rechazan automáticamente",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/RespondRequest" },
+                    "examples": {
+                      "aceptar": {
+                        "summary": "Aceptar solicitud",
+                        "value": { "status": "ACCEPTED", "responseMessage": "¡Bienvenido! Te espero para firmar el contrato." }
+                      },
+                      "rechazar": {
+                        "summary": "Rechazar solicitud",
+                        "value": { "status": "REJECTED", "responseMessage": "Lo siento, la habitación ya fue reservada." }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Solicitud respondida" },
+                "400": { "description": "Solicitud ya procesada" }
+              }
+            }
+          },
+          "/requests/{id}/cancel": {
+            "post": {
+              "tags": ["Requests"],
+              "summary": "Cancelar solicitud (Roomie)",
+              "description": "Cancela una solicitud pendiente",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Solicitud cancelada" },
+                "400": { "description": "Solo se pueden cancelar solicitudes pendientes" }
+              }
+            }
+          },
+          "/matches": {
+            "get": {
+              "tags": ["Matches"],
+              "summary": "Mis matches",
+              "description": "Lista los matches del usuario. Para roomies: arriendos acordados. Para propietarios: inquilinos confirmados.",
+              "parameters": [
+                { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "PENDING_PAYMENT", "CONFIRMED", "COMPLETED", "CANCELLED"] } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de matches" }
+              }
+            }
+          },
+          "/matches/stats": {
+            "get": {
+              "tags": ["Matches"],
+              "summary": "Estadísticas de matches",
+              "responses": {
+                "200": {
+                  "description": "Estadísticas",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/MatchStats" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/matches/{id}": {
+            "get": {
+              "tags": ["Matches"],
+              "summary": "Obtener match por ID",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Datos del match" }
+              }
+            },
+            "patch": {
+              "tags": ["Matches"],
+              "summary": "Actualizar match (Propietario)",
+              "description": "Actualiza estado, fechas, depósito y contrato del match",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/UpdateMatch" },
+                    "example": {
+                      "status": "CONFIRMED",
+                      "moveInDate": "2024-02-01",
+                      "depositPaid": true,
+                      "contractSigned": true
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Match actualizado" }
+              }
+            }
+          },
+          "/matches/{id}/rate/owner": {
+            "post": {
+              "tags": ["Matches"],
+              "summary": "Calificar propietario (Roomie)",
+              "description": "El roomie califica al propietario después de completar el arriendo",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/RateMatch" },
+                    "example": {
+                      "rating": 5,
+                      "review": "Excelente propietario, muy atento y respetuoso."
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Calificación registrada" },
+                "400": { "description": "Solo se puede calificar matches completados" }
+              }
+            }
+          },
+          "/matches/{id}/rate/roomie": {
+            "post": {
+              "tags": ["Matches"],
+              "summary": "Calificar roomie (Propietario)",
+              "description": "El propietario califica al roomie después de completar el arriendo",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/RateMatch" },
+                    "example": {
+                      "rating": 4,
+                      "review": "Buen inquilino, ordenado y puntual con los pagos."
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Calificación registrada" }
+              }
+            }
+          },
+          "/messages/conversations": {
+            "get": {
+              "tags": ["Messages"],
+              "summary": "Listar conversaciones",
+              "description": "Lista todas las conversaciones activas del usuario con el último mensaje y conteo de no leídos",
+              "responses": {
+                "200": {
+                  "description": "Lista de conversaciones",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Conversation" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/messages/conversations/{conversationId}": {
+            "get": {
+              "tags": ["Messages"],
+              "summary": "Obtener mensajes",
+              "description": "Lista los mensajes de una conversación. Automáticamente marca como leídos los mensajes del otro usuario.",
+              "parameters": [
+                { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+                { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+              ],
+              "responses": {
+                "200": { "description": "Lista de mensajes" }
+              }
+            }
+          },
+          "/messages/conversations/{conversationId}/read": {
+            "post": {
+              "tags": ["Messages"],
+              "summary": "Marcar como leídos",
+              "description": "Marca todos los mensajes de la conversación como leídos",
+              "parameters": [
+                { "name": "conversationId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+              ],
+              "responses": {
+                "200": { "description": "Mensajes marcados como leídos" }
+              }
+            }
+          },
+          "/messages": {
+            "post": {
+              "tags": ["Messages"],
+              "summary": "Enviar mensaje",
+              "description": "Envía un mensaje en una conversación existente",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": { "$ref": "#/components/schemas/SendMessage" },
+                    "example": {
+                      "conversationId": "uuid-de-conversacion",
+                      "content": "Hola, ¿a qué hora podemos coordinar la visita?"
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Mensaje enviado" }
+              }
+            }
+          },
+          "/messages/unread": {
+            "get": {
+              "tags": ["Messages"],
+              "summary": "Mensajes no leídos",
+              "description": "Devuelve el conteo total de mensajes no leídos del usuario",
+              "responses": {
+                "200": {
+                  "description": "Conteo de mensajes no leídos",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "unread": { "type": "integer", "example": 5 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "components": {
+          "securitySchemes": {
+            "bearerAuth": {
+              "type": "http",
+              "scheme": "bearer",
+              "bearerFormat": "JWT",
+              "description": "Token JWT obtenido del endpoint /auth/login"
+            }
+          },
+          "schemas": {
+            "LoginRequest": {
+              "type": "object",
+              "required": ["email", "password"],
+              "properties": {
+                "email": { "type": "string", "format": "email", "example": "carlos.mendez@email.com" },
+                "password": { "type": "string", "minLength": 6, "example": "password123" }
+              }
+            },
+            "RegisterRequest": {
+              "type": "object",
+              "required": ["email", "password", "firstName", "lastName", "role"],
+              "properties": {
+                "email": { "type": "string", "format": "email" },
+                "password": { "type": "string", "minLength": 6 },
+                "firstName": { "type": "string" },
+                "lastName": { "type": "string" },
+                "phone": { "type": "string", "example": "+56912345678" },
+                "role": { "type": "string", "enum": ["PROPIETARIO", "ROOMIE"] },
+                "hasRoom": { "type": "boolean", "description": "Solo para ROOMIE" }
+              }
+            },
+            "AuthResponse": {
+              "type": "object",
+              "properties": {
+                "user": { "$ref": "#/components/schemas/User" },
+                "token": { "type": "string", "description": "JWT válido por 7 días" }
+              }
+            },
+            "User": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "email": { "type": "string", "format": "email" },
+                "firstName": { "type": "string" },
+                "lastName": { "type": "string" },
+                "phone": { "type": "string" },
+                "avatar": { "type": "string" },
+                "role": { "type": "string", "enum": ["ADMIN", "PROPIETARIO", "ROOMIE"] },
+                "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "PENDING", "BANNED"] },
+                "emailVerified": { "type": "boolean" },
+                "createdAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "UpdateUser": {
+              "type": "object",
+              "properties": {
+                "firstName": { "type": "string" },
+                "lastName": { "type": "string" },
+                "phone": { "type": "string" },
+                "avatar": { "type": "string", "description": "URL de imagen" }
+              }
+            },
+            "RoomieProfile": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "userId": { "type": "string", "format": "uuid" },
+                "hasRoom": { "type": "boolean", "description": "true si ofrece habitación" },
+                "birthdate": { "type": "string", "format": "date" },
+                "gender": { "type": "string", "enum": ["MALE", "FEMALE", "NON_BINARY", "PREFER_NOT_TO_SAY"] },
+                "occupation": { "type": "string", "enum": ["STUDENT", "PROFESSIONAL", "REMOTE_WORKER", "ENTREPRENEUR", "OTHER"] },
+                "bio": { "type": "string" },
+                "preferences": {
+                  "type": "object",
+                  "properties": {
+                    "preferredLocations": { "type": "array", "items": { "type": "string" } },
+                    "budgetMin": { "type": "number" },
+                    "budgetMax": { "type": "number" },
+                    "moveInDate": { "type": "string" },
+                    "petFriendly": { "type": "boolean" },
+                    "smokingAllowed": { "type": "boolean" }
+                  }
+                },
+                "lifestyle": {
+                  "type": "object",
+                  "properties": {
+                    "sleepSchedule": { "type": "string" },
+                    "cleanlinessLevel": { "type": "string" },
+                    "socialLevel": { "type": "string" }
+                  }
+                },
+                "interests": { "type": "array", "items": { "type": "string" } },
+                "languages": { "type": "array", "items": { "type": "string" } },
+                "profileCompletion": { "type": "integer", "description": "Porcentaje 0-100" }
+              }
+            },
+            "UpdateRoomieProfile": {
+              "type": "object",
+              "properties": {
+                "hasRoom": { "type": "boolean" },
+                "birthdate": { "type": "string", "format": "date" },
+                "gender": { "type": "string", "enum": ["MALE", "FEMALE", "NON_BINARY", "PREFER_NOT_TO_SAY"] },
+                "occupation": { "type": "string", "enum": ["STUDENT", "PROFESSIONAL", "REMOTE_WORKER", "ENTREPRENEUR", "OTHER"] },
+                "bio": { "type": "string" },
+                "preferences": { "type": "object" },
+                "lifestyle": { "type": "object" },
+                "interests": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "PaginatedUsers": {
+              "type": "object",
+              "properties": {
+                "data": { "type": "array", "items": { "$ref": "#/components/schemas/User" } },
+                "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+              }
+            },
+            "Property": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "ownerId": { "type": "string", "format": "uuid" },
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "type": { "type": "string", "enum": ["APARTMENT", "HOUSE", "STUDIO", "LOFT", "SHARED_APARTMENT"] },
+                "status": { "type": "string", "enum": ["AVAILABLE", "OCCUPIED", "INACTIVE"] },
+                "address": { "$ref": "#/components/schemas/Address" },
+                "features": { "$ref": "#/components/schemas/PropertyFeatures" },
+                "rules": { "$ref": "#/components/schemas/PropertyRules" },
+                "monthlyRent": { "type": "number", "description": "CLP" },
+                "commonExpenses": { "type": "number", "description": "Gastos comunes CLP" },
+                "depositMonths": { "type": "integer" },
+                "images": { "type": "array", "items": { "type": "string" } },
+                "availableFrom": { "type": "string", "format": "date" },
+                "minimumStay": { "type": "integer", "description": "Meses mínimos" },
+                "views": { "type": "integer" },
+                "isVerified": { "type": "boolean" },
+                "createdAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "CreateProperty": {
+              "type": "object",
+              "required": ["title", "type", "address", "features", "monthlyRent"],
+              "properties": {
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "type": { "type": "string", "enum": ["APARTMENT", "HOUSE", "STUDIO", "LOFT", "SHARED_APARTMENT"] },
+                "address": { "$ref": "#/components/schemas/Address" },
+                "features": { "$ref": "#/components/schemas/PropertyFeatures" },
+                "rules": { "$ref": "#/components/schemas/PropertyRules" },
+                "monthlyRent": { "type": "number" },
+                "commonExpenses": { "type": "number" },
+                "depositMonths": { "type": "integer" },
+                "images": { "type": "array", "items": { "type": "string" } },
+                "availableFrom": { "type": "string", "format": "date" },
+                "minimumStay": { "type": "integer" }
+              }
+            },
+            "UpdateProperty": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "monthlyRent": { "type": "number" },
+                "status": { "type": "string", "enum": ["AVAILABLE", "OCCUPIED", "INACTIVE"] }
+              }
+            },
+            "Address": {
+              "type": "object",
+              "required": ["street", "number", "comuna", "city", "region"],
+              "properties": {
+                "street": { "type": "string" },
+                "number": { "type": "string" },
+                "apartment": { "type": "string" },
+                "comuna": { "type": "string", "example": "Providencia" },
+                "city": { "type": "string", "example": "Santiago" },
+                "region": { "type": "string", "example": "Metropolitana" },
+                "zipCode": { "type": "string" },
+                "coordinates": {
+                  "type": "object",
+                  "properties": {
+                    "lat": { "type": "number" },
+                    "lng": { "type": "number" }
+                  }
+                }
+              }
+            },
+            "PropertyFeatures": {
+              "type": "object",
+              "required": ["totalRooms", "availableRooms", "bathrooms", "squareMeters"],
+              "properties": {
+                "totalRooms": { "type": "integer" },
+                "availableRooms": { "type": "integer" },
+                "bathrooms": { "type": "integer" },
+                "squareMeters": { "type": "number" },
+                "floor": { "type": "integer" },
+                "hasElevator": { "type": "boolean" },
+                "hasParking": { "type": "boolean" },
+                "hasFurniture": { "type": "boolean" },
+                "hasWifi": { "type": "boolean" },
+                "hasAC": { "type": "boolean" },
+                "hasHeating": { "type": "boolean" },
+                "hasWasher": { "type": "boolean" },
+                "hasBalcony": { "type": "boolean" },
+                "hasGym": { "type": "boolean" },
+                "hasSecurity": { "type": "boolean" }
+              }
+            },
+            "PropertyRules": {
+              "type": "object",
+              "properties": {
+                "petsAllowed": { "type": "boolean" },
+                "smokingAllowed": { "type": "boolean" },
+                "childrenAllowed": { "type": "boolean" },
+                "maxOccupants": { "type": "integer" },
+                "quietHoursStart": { "type": "string", "example": "23:00" },
+                "quietHoursEnd": { "type": "string", "example": "08:00" },
+                "guestsAllowed": { "type": "boolean" },
+                "partiesAllowed": { "type": "boolean" }
+              }
+            },
+            "PaginatedProperties": {
+              "type": "object",
+              "properties": {
+                "data": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } },
+                "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+              }
+            },
+            "PropertyStats": {
+              "type": "object",
+              "properties": {
+                "total": { "type": "integer" },
+                "available": { "type": "integer" },
+                "occupied": { "type": "integer" },
+                "inactive": { "type": "integer" },
+                "totalViews": { "type": "integer" }
+              }
+            },
+            "Room": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "propertyId": { "type": "string", "format": "uuid" },
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "status": { "type": "string", "enum": ["AVAILABLE", "RESERVED", "OCCUPIED", "UNAVAILABLE"] },
+                "squareMeters": { "type": "number" },
+                "bedType": { "type": "string", "enum": ["SINGLE", "DOUBLE", "QUEEN", "KING", "NONE"] },
+                "hasPrivateBathroom": { "type": "boolean" },
+                "hasCloset": { "type": "boolean" },
+                "hasDesk": { "type": "boolean" },
+                "isFurnished": { "type": "boolean" },
+                "monthlyRent": { "type": "number" },
+                "images": { "type": "array", "items": { "type": "string" } },
+                "availableFrom": { "type": "string", "format": "date" }
+              }
+            },
+            "CreateRoom": {
+              "type": "object",
+              "required": ["propertyId", "name", "monthlyRent"],
+              "properties": {
+                "propertyId": { "type": "string", "format": "uuid" },
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "squareMeters": { "type": "number" },
+                "bedType": { "type": "string", "enum": ["SINGLE", "DOUBLE", "QUEEN", "KING", "NONE"] },
+                "hasPrivateBathroom": { "type": "boolean" },
+                "hasCloset": { "type": "boolean" },
+                "hasDesk": { "type": "boolean" },
+                "monthlyRent": { "type": "number" },
+                "images": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "UpdateRoom": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "status": { "type": "string", "enum": ["AVAILABLE", "RESERVED", "OCCUPIED", "UNAVAILABLE"] },
+                "monthlyRent": { "type": "number" }
+              }
+            },
+            "CreateRequest": {
+              "type": "object",
+              "required": ["roomId"],
+              "properties": {
+                "roomId": { "type": "string", "format": "uuid" },
+                "message": { "type": "string", "description": "Mensaje de presentación" },
+                "proposedMoveIn": { "type": "string", "format": "date" },
+                "proposedStayMonths": { "type": "integer" }
+              }
+            },
+            "RespondRequest": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": { "type": "string", "enum": ["ACCEPTED", "REJECTED"] },
+                "responseMessage": { "type": "string" }
+              }
+            },
+            "RequestStats": {
+              "type": "object",
+              "properties": {
+                "total": { "type": "integer" },
+                "pending": { "type": "integer" },
+                "accepted": { "type": "integer" },
+                "rejected": { "type": "integer" }
+              }
+            },
+            "UpdateMatch": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "enum": ["ACTIVE", "PENDING_PAYMENT", "CONFIRMED", "COMPLETED", "CANCELLED"] },
+                "moveInDate": { "type": "string", "format": "date" },
+                "moveOutDate": { "type": "string", "format": "date" },
+                "depositPaid": { "type": "boolean" },
+                "contractSigned": { "type": "boolean" },
+                "contractUrl": { "type": "string" }
+              }
+            },
+            "RateMatch": {
+              "type": "object",
+              "required": ["rating"],
+              "properties": {
+                "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+                "review": { "type": "string" }
+              }
+            },
+            "MatchStats": {
+              "type": "object",
+              "properties": {
+                "total": { "type": "integer" },
+                "active": { "type": "integer" },
+                "completed": { "type": "integer" },
+                "cancelled": { "type": "integer" }
+              }
+            },
+            "Conversation": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "matchId": { "type": "string", "format": "uuid" },
+                "otherUser": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "firstName": { "type": "string" },
+                    "lastName": { "type": "string" },
+                    "avatar": { "type": "string" }
+                  }
+                },
+                "room": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string" },
+                    "property": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "title": { "type": "string" }
+                      }
+                    }
+                  }
+                },
+                "lastMessage": {
+                  "type": "object",
+                  "properties": {
+                    "content": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" }
+                  }
+                },
+                "unreadCount": { "type": "integer" },
+                "lastMessageAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "SendMessage": {
+              "type": "object",
+              "required": ["conversationId", "content"],
+              "properties": {
+                "conversationId": { "type": "string", "format": "uuid" },
+                "type": { "type": "string", "enum": ["TEXT", "IMAGE", "FILE"], "default": "TEXT" },
+                "content": { "type": "string" },
+                "attachmentUrl": { "type": "string" }
+              }
+            },
+            "PaginationMeta": {
+              "type": "object",
+              "properties": {
+                "total": { "type": "integer", "description": "Total de registros" },
+                "page": { "type": "integer", "description": "Página actual" },
+                "limit": { "type": "integer", "description": "Registros por página" },
+                "totalPages": { "type": "integer", "description": "Total de páginas" }
+              }
+            },
+            "Error": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string", "description": "Mensaje de error legible" },
+                "error": { "type": "string", "description": "Tipo de error" },
+                "statusCode": { "type": "integer", "description": "Código HTTP" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      };
+
+      window.ui = SwaggerUIBundle({
+        spec: spec,
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout",
+        persistAuthorization: true,
+        filter: true,
+        tryItOutEnabled: true,
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1
+      });
+    };
+  </script>
+</body>
+</html>

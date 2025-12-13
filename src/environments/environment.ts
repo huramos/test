@@ -1,0 +1,12 @@
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:3001/api/v1',
+  firebase: {
+    projectId: 'room-match-cl',
+    appId: '1:848093296666:web:8bc2882f8c33c43d2bb9a3',
+    storageBucket: 'room-match-cl.firebasestorage.app',
+    apiKey: 'AIzaSyCAVZ-iYJCxMahXHUtKMLQAPNz9gBtD4lk',
+    authDomain: 'room-match-cl.firebaseapp.com',
+    messagingSenderId: '848093296666'
+  }
+};

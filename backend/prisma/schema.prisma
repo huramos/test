@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum UserRole {
+  ADMIN
+  PROPIETARIO
+  ROOMIE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  BANNED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
+enum Occupation {
+  STUDENT
+  PROFESSIONAL
+  REMOTE_WORKER
+  ENTREPRENEUR
+  OTHER
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  STUDIO
+  LOFT
+  SHARED_APARTMENT
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  OCCUPIED
+  INACTIVE
+}
+
+enum RoomStatus {
+  AVAILABLE
+  RESERVED
+  OCCUPIED
+  UNAVAILABLE
+}
+
+enum BedType {
+  SINGLE
+  DOUBLE
+  QUEEN
+  KING
+  NONE
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum RequestType {
+  ROOM_REQUEST
+  ROOMIE_REQUEST
+}
+
+enum MatchStatus {
+  ACTIVE
+  PENDING_PAYMENT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+// ============ MODELS ============
+
+model User {
+  id            String     @id @default(uuid())
+  firebaseUid   String     @unique @map("firebase_uid")
+  email         String     @unique
+  firstName     String     @map("first_name")
+  lastName      String     @map("last_name")
+  phone         String?
+  avatar        String?
+  role          UserRole   @default(ROOMIE)
+  status        UserStatus @default(PENDING)
+  emailVerified Boolean    @default(false) @map("email_verified")
+  phoneVerified Boolean    @default(false) @map("phone_verified")
+  lastLogin     DateTime?  @map("last_login")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  roomieProfile RoomieProfile?
+  properties    Property[]
+  sentRequests  RoomRequest[]
+  matchesAsRoomie Match[]
+  sentMessages  Message[]
+
+  @@map("users")
+}
+
+model RoomieProfile {
+  id                    String      @id @default(uuid())
+  userId                String      @unique @map("user_id")
+  hasRoom               Boolean     @default(false) @map("has_room")
+  birthdate             DateTime?   @db.Date
+  gender                Gender?
+  occupation            Occupation?
+  bio                   String?
+  preferences           Json?
+  lifestyle             Json?
+  interests             String[]
+  languages             String[]
+  verificationDocuments Json?       @map("verification_documents")
+  profileCompletion     Int         @default(0) @map("profile_completion")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("roomie_profiles")
+}
+
+model Property {
+  id             String         @id @default(uuid())
+  ownerId        String         @map("owner_id")
+  title          String
+  description    String?
+  type           PropertyType   @default(APARTMENT)
+  status         PropertyStatus @default(AVAILABLE)
+  address        Json
+  features       Json
+  rules          Json?
+  monthlyRent    Decimal        @map("monthly_rent") @db.Decimal(10, 2)
+  commonExpenses Decimal        @default(0) @map("common_expenses") @db.Decimal(10, 2)
+  depositMonths  Int            @default(1) @map("deposit_months")
+  images         String[]
+  availableFrom  DateTime?      @map("available_from") @db.Date
+  minimumStay    Int            @default(6) @map("minimum_stay")
+  views          Int            @default(0)
+  isVerified     Boolean        @default(false) @map("is_verified")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  rooms Room[]
+
+  @@map("properties")
+}
+
+model Room {
+  id                String     @id @default(uuid())
+  propertyId        String     @map("property_id")
+  name              String
+  description       String?
+  status            RoomStatus @default(AVAILABLE)
+  squareMeters      Decimal?   @map("square_meters") @db.Decimal(6, 2)
+  bedType           BedType    @default(SINGLE) @map("bed_type")
+  hasPrivateBathroom Boolean   @default(false) @map("has_private_bathroom")
+  hasCloset         Boolean    @default(false) @map("has_closet")
+  hasDesk           Boolean    @default(false) @map("has_desk")
+  hasWindow         Boolean    @default(true) @map("has_window")
+  hasAC             Boolean    @default(false) @map("has_ac")
+  hasHeating        Boolean    @default(false) @map("has_heating")
+  hasTV             Boolean    @default(false) @map("has_tv")
+  isFurnished       Boolean    @default(true) @map("is_furnished")
+  monthlyRent       Decimal    @map("monthly_rent") @db.Decimal(10, 2)
+  images            String[]
+  availableFrom     DateTime?  @map("available_from") @db.Date
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  property Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  requests RoomRequest[]
+  matches  Match[]
+
+  @@map("rooms")
+}
+
+model RoomRequest {
+  id                 String        @id @default(uuid())
+  roomId             String        @map("room_id")
+  requesterId        String        @map("requester_id")
+  type               RequestType   @default(ROOM_REQUEST)
+  status             RequestStatus @default(PENDING)
+  message            String?
+  proposedMoveIn     DateTime?     @map("proposed_move_in") @db.Date
+  proposedStayMonths Int?          @map("proposed_stay_months")
+  responseMessage    String?       @map("response_message")
+  respondedAt        DateTime?     @map("responded_at")
+  expiresAt          DateTime?     @map("expires_at")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  room      Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  requester User @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@map("room_requests")
+}
+
+model Match {
+  id             String      @id @default(uuid())
+  roomId         String      @map("room_id")
+  roomieId       String      @map("roomie_id")
+  status         MatchStatus @default(ACTIVE)
+  moveInDate     DateTime?   @map("move_in_date") @db.Date
+  moveOutDate    DateTime?   @map("move_out_date") @db.Date
+  monthlyRent    Decimal     @map("monthly_rent") @db.Decimal(10, 2)
+  depositAmount  Decimal?    @map("deposit_amount") @db.Decimal(10, 2)
+  depositPaid    Boolean     @default(false) @map("deposit_paid")
+  contractSigned Boolean     @default(false) @map("contract_signed")
+  contractUrl    String?     @map("contract_url")
+  roomieRating   Decimal?    @map("roomie_rating") @db.Decimal(2, 1)
+  ownerRating    Decimal?    @map("owner_rating") @db.Decimal(2, 1)
+  roomieReview   String?     @map("roomie_review")
+  ownerReview    String?     @map("owner_review")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  room         Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomie       User          @relation(fields: [roomieId], references: [id], onDelete: Cascade)
+  conversation Conversation?
+
+  @@map("matches")
+}
+
+model Conversation {
+  id            String    @id @default(uuid())
+  matchId       String    @unique @map("match_id")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastMessageAt DateTime? @map("last_message_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  match    Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String      @map("conversation_id")
+  senderId       String      @map("sender_id")
+  type           MessageType @default(TEXT)
+  content        String
+  attachmentUrl  String?     @map("attachment_url")
+  isRead         Boolean     @default(false) @map("is_read")
+  readAt         DateTime?   @map("read_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}

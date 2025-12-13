@@ -1,0 +1,13 @@
+@if (init) {
+  <router-outlet />
+} @else {
+  <div class="app-loading">
+    <div class="loading-container">
+      <div class="spinner">
+        <div class="spinner-circle"></div>
+      </div>
+      <h2>Cargando...</h2>
+      <p>Verificando sesión</p>
+    </div>
+  </div>
+}

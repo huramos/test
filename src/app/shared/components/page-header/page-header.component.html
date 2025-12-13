@@ -1,0 +1,14 @@
+<div class="page-header">
+  <div class="page-header-content">
+    <div class="page-header-left">
+      <h1>
+        <i *ngIf="icon" [class]="'fas fa-' + icon"></i>
+        {{ title }}
+      </h1>
+      <p *ngIf="subtitle" class="subtitle">{{ subtitle }}</p>
+    </div>
+    <div class="page-header-right">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</div>

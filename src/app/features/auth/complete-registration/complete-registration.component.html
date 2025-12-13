@@ -1,0 +1,166 @@
+<div class="min-vh-100 d-flex align-items-center justify-content-center auth-background py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 auth-card">
+          <div class="card-body p-5">
+            <!-- Logo/Header -->
+            <div class="text-center mb-4">
+              <div class="logo-container mb-3">
+                <i class="fas fa-home-user logo-icon"></i>
+              </div>
+              <h1 class="h3 fw-bold mb-2 text-primary">Completa tu perfil</h1>
+              <p class="text-muted">Solo un paso más para comenzar</p>
+            </div>
+
+            <!-- User Info from Google -->
+            @if (firebaseUser) {
+              <div class="user-preview mb-4">
+                @if (firebaseUser.photoURL) {
+                  <img [src]="firebaseUser.photoURL" alt="Avatar" class="user-avatar">
+                } @else {
+                  <div class="user-avatar-placeholder">
+                    <i class="fas fa-user"></i>
+                  </div>
+                }
+                <div class="user-info">
+                  <strong>{{ firebaseUser.email }}</strong>
+                  <small class="text-muted">Conectado con Google</small>
+                </div>
+              </div>
+            }
+
+            <!-- Success Alert -->
+            @if (success()) {
+              <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                ¡Registro completado! Redirigiendo...
+              </div>
+            }
+
+            <!-- Error Alert -->
+            @if (error()) {
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                {{ error() }}
+                <button type="button" class="btn-close" (click)="error.set(null)"></button>
+              </div>
+            }
+
+            <!-- Role Selection -->
+            <div class="mb-4">
+              <label class="form-label">¿Qué tipo de usuario eres?</label>
+              <div class="role-selector">
+                @for (role of roles; track role.value) {
+                  <div
+                    class="role-option"
+                    [class.selected]="selectedRole() === role.value"
+                    (click)="selectRole(role.value)"
+                  >
+                    <div class="role-icon">
+                      <i class="fas" [ngClass]="role.icon"></i>
+                    </div>
+                    <div class="role-info">
+                      <strong>{{ role.label }}</strong>
+                      <small>{{ role.description }}</small>
+                    </div>
+                    <div class="role-check">
+                      <i class="fas fa-check-circle"></i>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Registration Form -->
+            <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()">
+              <div class="row">
+                <div class="col-6 mb-3">
+                  <label for="firstName" class="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="firstName"
+                    formControlName="firstName"
+                    placeholder="Juan"
+                    [class.is-invalid]="registrationForm.get('firstName')?.invalid && registrationForm.get('firstName')?.touched"
+                  >
+                  @if (registrationForm.get('firstName')?.invalid && registrationForm.get('firstName')?.touched) {
+                    <div class="invalid-feedback">Nombre requerido</div>
+                  }
+                </div>
+                <div class="col-6 mb-3">
+                  <label for="lastName" class="form-label">Apellido</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="lastName"
+                    formControlName="lastName"
+                    placeholder="Pérez"
+                    [class.is-invalid]="registrationForm.get('lastName')?.invalid && registrationForm.get('lastName')?.touched"
+                  >
+                  @if (registrationForm.get('lastName')?.invalid && registrationForm.get('lastName')?.touched) {
+                    <div class="invalid-feedback">Apellido requerido</div>
+                  }
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="phone" class="form-label">Teléfono (opcional)</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    id="phone"
+                    formControlName="phone"
+                    placeholder="+56 9 1234 5678"
+                  >
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="acceptTerms"
+                    formControlName="acceptTerms"
+                  >
+                  <label class="form-check-label small" for="acceptTerms">
+                    Acepto los <a href="#" class="text-primary">términos y condiciones</a> y la
+                    <a href="#" class="text-primary">política de privacidad</a>
+                  </label>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary w-100 mb-3 btn-lg"
+                [disabled]="loading() || registrationForm.invalid"
+              >
+                @if (loading()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Completando registro...
+                } @else {
+                  <i class="fas fa-check me-2"></i>
+                  Completar Registro
+                }
+              </button>
+            </form>
+
+            <!-- Logout Link -->
+            <div class="text-center">
+              <p class="text-muted mb-0">
+                ¿No eres tú?
+                <a href="javascript:void(0)" class="text-primary fw-medium" (click)="logout()">
+                  Usar otra cuenta
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
