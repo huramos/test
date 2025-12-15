@@ -312,7 +312,7 @@ export class MockDataService {
         ownerId: 'prop-1',
         title: 'Departamento amplio en Providencia',
         description: 'Hermoso departamento de 3 habitaciones en el corazón de Providencia. Cerca del metro y áreas verdes. Ideal para profesionales jóvenes.',
-        type: PropertyType.DEPARTAMENTO,
+        type: PropertyType.APARTMENT,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Av. Providencia',
@@ -404,7 +404,7 @@ export class MockDataService {
         ownerId: 'prop-1',
         title: 'Casa compartida en Ñuñoa',
         description: 'Linda casa de 4 habitaciones con jardín. Ambiente tranquilo, ideal para estudiantes.',
-        type: PropertyType.CASA,
+        type: PropertyType.HOUSE,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Calle Irarrázaval',
@@ -495,7 +495,7 @@ export class MockDataService {
         ownerId: 'prop-2',
         title: 'Estudio moderno en Santiago Centro',
         description: 'Estudio completamente equipado en edificio nuevo. Perfecto para una persona.',
-        type: PropertyType.ESTUDIO,
+        type: PropertyType.STUDIO,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Calle Morandé',
@@ -564,7 +564,7 @@ export class MockDataService {
         ownerId: 'prop-3',
         title: 'Departamento compartido Las Condes',
         description: 'Excelente ubicación en Las Condes, cerca de todo. 2 habitaciones disponibles.',
-        type: PropertyType.DEPARTAMENTO,
+        type: PropertyType.APARTMENT,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Av. Apoquindo',
@@ -655,7 +655,7 @@ export class MockDataService {
         ownerId: 'prop-3',
         title: 'Habitación en casa familiar Macul',
         description: 'Habitación en casa familiar cerca de universidades. Ambiente tranquilo y seguro.',
-        type: PropertyType.HABITACION,
+        type: PropertyType.SHARED_APARTMENT,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Av. Macul',
@@ -726,7 +726,7 @@ export class MockDataService {
         ownerId: 'roomie-2',
         title: 'Habitación en depto de profesional',
         description: 'Comparto mi departamento en Las Condes. Busco roomie responsable y ordenado.',
-        type: PropertyType.HABITACION,
+        type: PropertyType.SHARED_APARTMENT,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Av. Vitacura',
@@ -800,7 +800,7 @@ export class MockDataService {
         ownerId: 'roomie-5',
         title: 'Pieza en casa de profesora',
         description: 'Ofrezco una habitación en mi casa en Ñuñoa. Ambiente familiar y tranquilo.',
-        type: PropertyType.HABITACION,
+        type: PropertyType.SHARED_APARTMENT,
         status: PropertyStatus.AVAILABLE,
         address: {
           street: 'Calle Sucre',

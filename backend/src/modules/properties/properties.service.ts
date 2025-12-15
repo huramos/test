@@ -17,6 +17,7 @@ export class PropertiesService {
         title: dto.title,
         description: dto.description,
         type: dto.type,
+        rentalType: dto.rentalType,
         address: dto.address as any,
         features: dto.features as any,
         rules: dto.rules as any,
@@ -39,21 +40,30 @@ export class PropertiesService {
       comuna,
       city,
       type,
+      rentalType,
       status,
       priceMin,
       priceMax,
       rooms,
       bathrooms,
       petsAllowed,
-      page = 1,
-      limit = 10
+      page: pageParam = 1,
+      limit: limitParam = 10
     } = filters;
+
+    // Convert to numbers (query params come as strings)
+    const page = Number(pageParam) || 1;
+    const limit = Number(limitParam) || 10;
 
     // Build where clause
     const where: any = {};
 
     if (type) {
       where.type = type;
+    }
+
+    if (rentalType) {
+      where.rentalType = rentalType;
     }
 
     if (status) {
@@ -63,11 +73,11 @@ export class PropertiesService {
     }
 
     if (priceMin) {
-      where.monthlyRent = { ...where.monthlyRent, gte: priceMin };
+      where.monthlyRent = { ...where.monthlyRent, gte: Number(priceMin) };
     }
 
     if (priceMax) {
-      where.monthlyRent = { ...where.monthlyRent, lte: priceMax };
+      where.monthlyRent = { ...where.monthlyRent, lte: Number(priceMax) };
     }
 
     // For JSON field filtering in Prisma (address, features, rules)
@@ -165,6 +175,7 @@ export class PropertiesService {
         title: dto.title,
         description: dto.description,
         type: dto.type,
+        rentalType: dto.rentalType,
         status: dto.status,
         address: dto.address as any,
         features: dto.features as any,

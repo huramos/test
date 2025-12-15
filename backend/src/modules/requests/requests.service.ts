@@ -56,7 +56,9 @@ export class RequestsService {
   }
 
   async findByRequester(requesterId: string, filters: RequestFilterDto) {
-    const { status, type, page = 1, limit = 10 } = filters;
+    const { status, type } = filters;
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
 
     const where: any = { requesterId };
 
@@ -95,7 +97,9 @@ export class RequestsService {
   }
 
   async findByOwner(ownerId: string, filters: RequestFilterDto) {
-    const { status, type, page = 1, limit = 10 } = filters;
+    const { status, type } = filters;
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
 
     const where: any = {
       room: {

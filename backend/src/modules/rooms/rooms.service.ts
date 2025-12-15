@@ -1,14 +1,15 @@
-import { RoomStatus, UserRole } from '@prisma/client';
+import { RoomStatus, UserRole, RentalType, PropertyStatus } from '@prisma/client';
 import prisma from '../../config/prisma';
 import { CreateRoomDto, UpdateRoomDto, RoomFilterDto } from './rooms.dto';
 import {
   NotFoundException,
-  ForbiddenException
+  ForbiddenException,
+  BadRequestException
 } from '../../common/filters/error.filter';
 
 export class RoomsService {
   async create(userId: string, dto: CreateRoomDto) {
-    // Verify property exists and belongs to user
+    // Verify property exists and user owns it
     const property = await prisma.property.findUnique({
       where: { id: dto.propertyId }
     });
@@ -21,56 +22,50 @@ export class RoomsService {
       throw new ForbiddenException('No tienes permiso para agregar habitaciones a esta propiedad');
     }
 
+    // Only allow rooms for BY_ROOMS rental type
+    if (property.rentalType !== RentalType.BY_ROOMS) {
+      throw new BadRequestException('Solo puedes agregar habitaciones a propiedades con arriendo por habitaciones');
+    }
+
     const room = await prisma.room.create({
       data: {
-        ...dto,
-        status: RoomStatus.AVAILABLE,
-        availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null
+        propertyId: dto.propertyId,
+        name: dto.name,
+        description: dto.description,
+        squareMeters: dto.squareMeters,
+        bedType: dto.bedType,
+        hasPrivateBathroom: dto.hasPrivateBathroom,
+        hasCloset: dto.hasCloset,
+        hasDesk: dto.hasDesk,
+        hasWindow: dto.hasWindow,
+        hasAC: dto.hasAC,
+        hasHeating: dto.hasHeating,
+        hasTV: dto.hasTV,
+        isFurnished: dto.isFurnished,
+        monthlyRent: dto.monthlyRent,
+        images: dto.images || [],
+        availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
+        status: RoomStatus.AVAILABLE
       }
     });
 
     return room;
   }
 
-  async findAll(filters: RoomFilterDto) {
-    const {
-      propertyId,
-      status,
-      priceMin,
-      priceMax,
-      hasPrivateBathroom,
-      page = 1,
-      limit = 10
-    } = filters;
+  async findByProperty(propertyId: string, filters: RoomFilterDto) {
+    const { status } = filters;
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
 
-    const where: any = {};
-
-    if (propertyId) {
-      where.propertyId = propertyId;
-    }
+    const where: any = { propertyId };
 
     if (status) {
       where.status = status;
-    } else {
-      where.status = RoomStatus.AVAILABLE;
-    }
-
-    if (priceMin) {
-      where.monthlyRent = { ...where.monthlyRent, gte: priceMin };
-    }
-
-    if (priceMax) {
-      where.monthlyRent = { ...where.monthlyRent, lte: priceMax };
-    }
-
-    if (hasPrivateBathroom !== undefined) {
-      where.hasPrivateBathroom = hasPrivateBathroom;
     }
 
     const [rooms, total] = await Promise.all([
       prisma.room.findMany({
         where,
-        include: { property: true },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit
@@ -89,19 +84,22 @@ export class RoomsService {
     };
   }
 
-  async findByProperty(propertyId: string) {
-    return await prisma.room.findMany({
-      where: { propertyId },
-      orderBy: { createdAt: 'asc' }
-    });
-  }
-
   async findOne(id: string) {
     const room = await prisma.room.findUnique({
       where: { id },
       include: {
         property: {
-          include: { owner: true }
+          include: {
+            owner: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+                phone: true
+              }
+            }
+          }
         }
       }
     });
@@ -123,17 +121,34 @@ export class RoomsService {
       throw new NotFoundException('Habitación no encontrada');
     }
 
+    // Only owner or admin can update
     if (userRole !== UserRole.ADMIN && room.property.ownerId !== userId) {
       throw new ForbiddenException('No tienes permiso para actualizar esta habitación');
     }
 
-    return await prisma.room.update({
+    const updatedRoom = await prisma.room.update({
       where: { id },
       data: {
-        ...dto,
+        name: dto.name,
+        description: dto.description,
+        status: dto.status,
+        squareMeters: dto.squareMeters,
+        bedType: dto.bedType,
+        hasPrivateBathroom: dto.hasPrivateBathroom,
+        hasCloset: dto.hasCloset,
+        hasDesk: dto.hasDesk,
+        hasWindow: dto.hasWindow,
+        hasAC: dto.hasAC,
+        hasHeating: dto.hasHeating,
+        hasTV: dto.hasTV,
+        isFurnished: dto.isFurnished,
+        monthlyRent: dto.monthlyRent,
+        images: dto.images,
         availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : room.availableFrom
       }
     });
+
+    return updatedRoom;
   }
 
   async updateStatus(id: string, userId: string, userRole: UserRole, status: RoomStatus) {
@@ -170,7 +185,66 @@ export class RoomsService {
       throw new ForbiddenException('No tienes permiso para eliminar esta habitación');
     }
 
+    // Check if room has active matches
+    const activeMatch = await prisma.match.findFirst({
+      where: {
+        roomId: id,
+        status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'CONFIRMED'] }
+      }
+    });
+
+    if (activeMatch) {
+      throw new ForbiddenException('No puedes eliminar una habitación con un match activo');
+    }
+
     await prisma.room.delete({ where: { id } });
     return { message: 'Habitación eliminada correctamente' };
+  }
+
+  async findAvailable(filters: RoomFilterDto) {
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
+
+    const where = {
+      status: RoomStatus.AVAILABLE,
+      property: {
+        rentalType: RentalType.BY_ROOMS,
+        status: PropertyStatus.AVAILABLE
+      }
+    };
+
+    const [rooms, total] = await Promise.all([
+      prisma.room.findMany({
+        where,
+        include: {
+          property: {
+            include: {
+              owner: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.room.count({ where })
+    ]);
+
+    return {
+      data: rooms,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 }

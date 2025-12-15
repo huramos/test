@@ -11,10 +11,10 @@ import { Type } from 'class-transformer';
 import { RoomStatus, BedType } from '@prisma/client';
 
 export class CreateRoomDto {
-  @IsString({ message: 'El ID de la propiedad es requerido' })
+  @IsString()
   propertyId: string;
 
-  @IsString({ message: 'El nombre es requerido' })
+  @IsString()
   name: string;
 
   @IsOptional()
@@ -68,6 +68,7 @@ export class CreateRoomDto {
 
   @IsOptional()
   @IsArray()
+  @IsString({ each: true })
   images?: string[];
 
   @IsOptional()
@@ -136,6 +137,7 @@ export class UpdateRoomDto {
 
   @IsOptional()
   @IsArray()
+  @IsString({ each: true })
   images?: string[];
 
   @IsOptional()
@@ -145,35 +147,16 @@ export class UpdateRoomDto {
 
 export class RoomFilterDto {
   @IsOptional()
-  @IsString()
-  propertyId?: string;
-
-  @IsOptional()
   @IsEnum(RoomStatus)
   status?: RoomStatus;
 
   @IsOptional()
-  @IsNumber()
   @Type(() => Number)
-  priceMin?: number;
-
-  @IsOptional()
   @IsNumber()
-  @Type(() => Number)
-  priceMax?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  hasPrivateBathroom?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
   page?: number;
 
   @IsOptional()
-  @IsNumber()
   @Type(() => Number)
+  @IsNumber()
   limit?: number;
 }

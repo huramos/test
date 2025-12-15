@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -49,6 +50,11 @@ enum PropertyStatus {
   AVAILABLE
   OCCUPIED
   INACTIVE
+}
+
+enum RentalType {
+  ENTIRE        // Se arrienda la propiedad completa
+  BY_ROOMS      // Se arriendan las habitaciones individualmente
 }
 
 enum RoomStatus {
@@ -151,6 +157,7 @@ model Property {
   title          String
   description    String?
   type           PropertyType   @default(APARTMENT)
+  rentalType     RentalType     @default(ENTIRE) @map("rental_type")
   status         PropertyStatus @default(AVAILABLE)
   address        Json
   features       Json

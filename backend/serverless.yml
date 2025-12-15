@@ -1,0 +1,88 @@
+service: roommatch-api
+
+frameworkVersion: '3'
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  memorySize: 512
+  timeout: 30
+
+  # Environment variables loaded from .env via serverless-dotenv-plugin
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    DATABASE_URL: ${env:DATABASE_URL}
+    JWT_SECRET: ${env:JWT_SECRET, 'change-this-secret'}
+    JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN, '7d'}
+    FIREBASE_PROJECT_ID: ${env:FIREBASE_PROJECT_ID}
+    FIREBASE_SERVICE_ACCOUNT_PATH: ${env:FIREBASE_SERVICE_ACCOUNT_PATH, ''}
+    FIREBASE_CLIENT_EMAIL: ${env:FIREBASE_CLIENT_EMAIL, ''}
+    FIREBASE_PRIVATE_KEY: ${env:FIREBASE_PRIVATE_KEY, ''}
+    CORS_ORIGIN: ${env:CORS_ORIGIN, '*'}
+    UPLOAD_PATH: /tmp/uploads
+    MAX_FILE_SIZE: ${env:MAX_FILE_SIZE, '5242880'}
+    RATE_LIMIT_WINDOW_MS: ${env:RATE_LIMIT_WINDOW_MS, '900000'}
+    RATE_LIMIT_MAX: ${env:RATE_LIMIT_MAX, '100'}
+
+  # IAM permissions
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: '*'
+
+# Plugins
+plugins:
+  - serverless-offline
+
+# Package configuration
+package:
+  individually: false
+  patterns:
+    - '!node_modules/.prisma/client/libquery_engine-*'
+    - 'node_modules/.prisma/client/libquery_engine-rhel-*'
+    - '!node_modules/prisma/libquery_engine-*'
+    - '!node_modules/@prisma/engines/**'
+    - '!.git/**'
+    - '!.gitignore'
+    - '!.env*'
+    - '!src/**'
+    - '!prisma/migrations/**'
+    - '!prisma/seed*.ts'
+    - '!**/*.ts'
+    - '!**/*.map'
+    - '!tsconfig.json'
+    - '!jest.config.js'
+    - '!README.md'
+    - 'dist/**'
+    - 'node_modules/**'
+    - 'prisma/schema.prisma'
+    - 'room-match-cl-firebase-adminsdk-*.json'
+
+# Functions
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: true
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+
+# Custom configuration
+custom:
+  serverless-offline:
+    httpPort: 3001
+    noPrependStageInUrl: true

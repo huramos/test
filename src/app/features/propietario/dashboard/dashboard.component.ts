@@ -2,10 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { MockDataService } from '../../../core/services/mock-data.service';
+import { PropertyService } from '../../../core/services/property.service';
 import { Property, PropertyStatus } from '../../../core/models/property.model';
-import { RoomRequest, RequestStatus } from '../../../core/models/room-request.model';
-import { Propietario } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-propietario-dashboard',
@@ -40,8 +38,8 @@ import { Propietario } from '../../../core/models/user.model';
             <i class="fas fa-door-open"></i>
           </div>
           <div class="stat-info">
-            <span class="stat-value">{{ availableRooms() }}</span>
-            <span class="stat-label">Habitaciones Disponibles</span>
+            <span class="stat-value">{{ availableProperties() }}</span>
+            <span class="stat-label">Disponibles</span>
           </div>
         </div>
 
@@ -57,11 +55,11 @@ import { Propietario } from '../../../core/models/user.model';
 
         <div class="stat-card">
           <div class="stat-icon matches">
-            <i class="fas fa-handshake"></i>
+            <i class="fas fa-eye"></i>
           </div>
           <div class="stat-info">
-            <span class="stat-value">{{ activeMatches() }}</span>
-            <span class="stat-label">Matches Activos</span>
+            <span class="stat-value">{{ totalViews() }}</span>
+            <span class="stat-label">Vistas Totales</span>
           </div>
         </div>
       </div>
@@ -73,72 +71,81 @@ import { Propietario } from '../../../core/models/user.model';
             <h2>Mis Propiedades</h2>
             <a routerLink="/propietario/propiedades" class="btn-link">Ver todas</a>
           </div>
-          <div class="properties-grid">
-            @for (property of properties(); track property.id) {
-              <div class="property-card">
-                <div class="property-image">
-                  <img [src]="property.images[0]" [alt]="property.title">
-                  <span class="property-status" [class]="property.status.toLowerCase()">
-                    {{ getStatusLabel(property.status) }}
-                  </span>
-                </div>
-                <div class="property-info">
-                  <h3>{{ property.title }}</h3>
-                  <p class="location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    {{ property.address.comuna }}, {{ property.address.city }}
-                  </p>
-                  <div class="property-details">
-                    <span><i class="fas fa-bed"></i> {{ property.features.totalRooms }} hab.</span>
-                    <span><i class="fas fa-bath"></i> {{ property.features.bathrooms }} baños</span>
-                    <span class="price">\${{ property.monthlyRent | number }}</span>
+
+          @if (loading()) {
+            <div class="loading-inline">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span>Cargando...</span>
+            </div>
+          } @else {
+            <div class="properties-grid">
+              @for (property of properties(); track property.id) {
+                <div class="property-card">
+                  <div class="property-image">
+                    @if (property.images && property.images.length > 0) {
+                      <img [src]="property.images[0]" [alt]="property.title">
+                    } @else {
+                      <div class="no-image">
+                        <i class="fas fa-home"></i>
+                      </div>
+                    }
+                    <span class="property-status" [class]="property.status.toLowerCase()">
+                      {{ getStatusLabel(property.status) }}
+                    </span>
+                  </div>
+                  <div class="property-info">
+                    <h3>{{ property.title }}</h3>
+                    <p class="location">
+                      <i class="fas fa-map-marker-alt"></i>
+                      {{ property.address.comuna }}, {{ property.address.city }}
+                    </p>
+                    <div class="property-details">
+                      <span><i class="fas fa-bed"></i> {{ property.features.totalRooms }} hab.</span>
+                      <span><i class="fas fa-bath"></i> {{ property.features.bathrooms }} baños</span>
+                      <span class="price">\${{ property.monthlyRent | number }}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            } @empty {
-              <div class="empty-state">
-                <i class="fas fa-home"></i>
-                <p>No tienes propiedades registradas</p>
-                <a routerLink="/propietario/propiedades" class="btn btn-primary btn-sm">
-                  Agregar Propiedad
-                </a>
-              </div>
-            }
-          </div>
+              } @empty {
+                <div class="empty-state">
+                  <i class="fas fa-home"></i>
+                  <p>No tienes propiedades registradas</p>
+                  <a routerLink="/propietario/propiedades" class="btn btn-primary btn-sm">
+                    Agregar Propiedad
+                  </a>
+                </div>
+              }
+            </div>
+          }
         </div>
 
-        <!-- Solicitudes Recientes -->
+        <!-- Info Panel -->
         <div class="section">
           <div class="section-header">
-            <h2>Solicitudes Recientes</h2>
-            <a routerLink="/propietario/solicitudes" class="btn-link">Ver todas</a>
+            <h2>Resumen</h2>
           </div>
-          <div class="requests-list">
-            @for (request of recentRequests(); track request.id) {
-              <div class="request-item">
-                <div class="request-avatar">
-                  <img [src]="getRequesterAvatar(request.senderId)" alt="Avatar">
-                </div>
-                <div class="request-info">
-                  <strong>{{ getRequesterName(request.senderId) }}</strong>
-                  <p>{{ request.message | slice:0:80 }}...</p>
-                  <small class="text-muted">
-                    <i class="fas fa-clock"></i>
-                    {{ request.createdAt | date:'dd MMM yyyy' }}
-                  </small>
-                </div>
-                <div class="request-actions">
-                  <span class="request-status" [class]="request.status.toLowerCase()">
-                    {{ getRequestStatusLabel(request.status) }}
-                  </span>
-                </div>
+          <div class="info-panel">
+            <div class="info-item">
+              <i class="fas fa-check-circle text-success"></i>
+              <div>
+                <strong>{{ verifiedProperties() }}</strong>
+                <span>Propiedades verificadas</span>
               </div>
-            } @empty {
-              <div class="empty-state small">
-                <i class="fas fa-inbox"></i>
-                <p>No hay solicitudes recientes</p>
+            </div>
+            <div class="info-item">
+              <i class="fas fa-clock text-warning"></i>
+              <div>
+                <strong>{{ pendingVerification() }}</strong>
+                <span>Pendientes de verificar</span>
               </div>
-            }
+            </div>
+            <div class="info-item">
+              <i class="fas fa-ban text-muted"></i>
+              <div>
+                <strong>{{ inactiveProperties() }}</strong>
+                <span>Inactivas</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -187,6 +194,8 @@ import { Propietario } from '../../../core/models/user.model';
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       }
     }
+
+    .me-2 { margin-right: 0.5rem; }
 
     .stats-grid {
       display: grid;
@@ -299,6 +308,17 @@ import { Propietario } from '../../../core/models/user.model';
       }
     }
 
+    .loading-inline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 2rem;
+      color: #6b7280;
+
+      i { color: #10b981; }
+    }
+
     .properties-grid {
       display: grid;
       gap: 1rem;
@@ -330,6 +350,17 @@ import { Propietario } from '../../../core/models/user.model';
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+
+      .no-image {
+        width: 100%;
+        height: 100%;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i { font-size: 2rem; color: #d1d5db; }
       }
 
       .property-status {
@@ -403,79 +434,41 @@ import { Propietario } from '../../../core/models/user.model';
       }
     }
 
-    .requests-list {
+    .info-panel {
       display: flex;
       flex-direction: column;
       gap: 1rem;
     }
 
-    .request-item {
+    .info-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 1rem;
       padding: 1rem;
-      border: 1px solid #e5e7eb;
+      background: #f9fafb;
       border-radius: 0.75rem;
-    }
 
-    .request-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      overflow: hidden;
-      flex-shrink: 0;
+      i {
+        font-size: 1.25rem;
 
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-    }
-
-    .request-info {
-      flex: 1;
-      min-width: 0;
-
-      strong {
-        display: block;
-        font-size: 0.9375rem;
-        color: #1f2937;
-        margin-bottom: 0.25rem;
+        &.text-success { color: #10b981; }
+        &.text-warning { color: #f59e0b; }
+        &.text-muted { color: #9ca3af; }
       }
 
-      p {
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin: 0 0 0.5rem;
-      }
-
-      small {
-        font-size: 0.75rem;
+      div {
         display: flex;
-        align-items: center;
-        gap: 0.25rem;
-      }
-    }
+        flex-direction: column;
 
-    .request-status {
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
-      font-size: 0.75rem;
-      font-weight: 600;
+        strong {
+          font-size: 1.25rem;
+          color: #1f2937;
+        }
 
-      &.pending {
-        background: #fef3c7;
-        color: #d97706;
-      }
-
-      &.approved {
-        background: #d1fae5;
-        color: #059669;
-      }
-
-      &.rejected {
-        background: #fee2e2;
-        color: #dc2626;
+        span {
+          font-size: 0.8125rem;
+          color: #6b7280;
+        }
       }
     }
 
@@ -501,6 +494,11 @@ import { Propietario } from '../../../core/models/user.model';
           font-size: 2rem;
         }
       }
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
     }
 
     @media (max-width: 1024px) {
@@ -541,71 +539,69 @@ import { Propietario } from '../../../core/models/user.model';
 })
 export class PropietarioDashboardComponent implements OnInit {
   private authService = inject(AuthService);
-  private mockDataService = inject(MockDataService);
+  private propertyService = inject(PropertyService);
 
   userName = signal('');
   totalProperties = signal(0);
-  availableRooms = signal(0);
+  availableProperties = signal(0);
+  inactiveProperties = signal(0);
+  verifiedProperties = signal(0);
+  pendingVerification = signal(0);
   pendingRequests = signal(0);
-  activeMatches = signal(0);
+  totalViews = signal(0);
   properties = signal<Property[]>([]);
-  recentRequests = signal<RoomRequest[]>([]);
+  loading = signal(false);
 
   ngOnInit() {
     this.loadData();
   }
 
   private loadData() {
-    const user = this.authService.getCurrentUser() as Propietario;
+    const user = this.authService.getCurrentUser();
     if (user) {
       this.userName.set(user.firstName);
-
-      const userProperties = this.mockDataService.getPropertiesByOwner(user.id);
-      this.properties.set(userProperties.slice(0, 3));
-      this.totalProperties.set(userProperties.length);
-
-      let rooms = 0;
-      userProperties.forEach(p => {
-        rooms += p.rooms.filter(r => r.isAvailable).length;
-      });
-      this.availableRooms.set(rooms);
-
-      const requests = this.mockDataService.getPendingRequestsForUser(user.id);
-      this.pendingRequests.set(requests.length);
-      this.recentRequests.set(requests.slice(0, 5));
-
-      const matches = this.mockDataService.getActiveMatchesByUser(user.id);
-      this.activeMatches.set(matches.length);
+      this.loadProperties();
+      this.loadStats();
     }
   }
 
-  getStatusLabel(status: PropertyStatus): string {
-    const labels: Record<PropertyStatus, string> = {
-      [PropertyStatus.AVAILABLE]: 'Disponible',
-      [PropertyStatus.OCCUPIED]: 'Ocupado',
-      [PropertyStatus.INACTIVE]: 'Inactivo'
+  private loadProperties() {
+    this.loading.set(true);
+    this.propertyService.getMyProperties().subscribe({
+      next: (data) => {
+        this.properties.set(data.slice(0, 3));
+        this.totalProperties.set(data.length);
+
+        const available = data.filter(p => p.status === PropertyStatus.AVAILABLE).length;
+        const inactive = data.filter(p => p.status === PropertyStatus.INACTIVE).length;
+        const verified = data.filter(p => p.isVerified).length;
+        const pending = data.filter(p => !p.isVerified).length;
+        const views = data.reduce((sum, p) => sum + (p.views || 0), 0);
+
+        this.availableProperties.set(available);
+        this.inactiveProperties.set(inactive);
+        this.verifiedProperties.set(verified);
+        this.pendingVerification.set(pending);
+        this.totalViews.set(views);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private loadStats() {
+    // TODO: Load pending requests from API when available
+    this.pendingRequests.set(0);
+  }
+
+  getStatusLabel(status: PropertyStatus | string): string {
+    const labels: Record<string, string> = {
+      'AVAILABLE': 'Disponible',
+      'OCCUPIED': 'Ocupado',
+      'INACTIVE': 'Inactivo'
     };
-    return labels[status];
-  }
-
-  getRequestStatusLabel(status: RequestStatus): string {
-    const labels: Record<RequestStatus, string> = {
-      [RequestStatus.PENDING]: 'Pendiente',
-      [RequestStatus.APPROVED]: 'Aprobada',
-      [RequestStatus.REJECTED]: 'Rechazada',
-      [RequestStatus.CANCELLED]: 'Cancelada',
-      [RequestStatus.EXPIRED]: 'Expirada'
-    };
-    return labels[status];
-  }
-
-  getRequesterName(senderId: string): string {
-    const user = this.mockDataService.getUserById(senderId);
-    return user ? `${user.firstName} ${user.lastName}` : 'Usuario';
-  }
-
-  getRequesterAvatar(senderId: string): string {
-    const user = this.mockDataService.getUserById(senderId);
-    return user?.avatar || 'https://ui-avatars.com/api/?name=User&background=6b7280&color=fff';
+    return labels[status] || status;
   }
 }

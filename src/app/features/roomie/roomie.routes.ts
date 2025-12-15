@@ -20,6 +20,10 @@ export const ROOMIE_ROUTES: Routes = [
         loadComponent: () => import('./buscar/buscar.component').then(m => m.BuscarComponent)
       },
       {
+        path: 'explorar',
+        loadComponent: () => import('./explorar/explorar.component').then(m => m.ExplorarComponent)
+      },
+      {
         path: 'solicitudes',
         loadComponent: () => import('./solicitudes/solicitudes.component').then(m => m.SolicitudesComponent)
       },

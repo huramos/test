@@ -1,67 +1,57 @@
-import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { PropertyService, CreatePropertyDto } from '../../../../core/services/property.service';
-import { PropertyType } from '../../../../core/models/property.model';
+import { PropertyService } from '../../../../core/services/property.service';
+import { Property, PropertyType, PropertyStatus } from '../../../../core/models/property.model';
 
 @Component({
-  selector: 'app-crear-propiedad',
+  selector: 'app-editar-propiedad',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="modal-backdrop" (click)="onClose()">
       <div class="modal-container" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>Nueva Propiedad</h2>
+          <h2>Editar Propiedad</h2>
           <button class="close-btn" (click)="onClose()">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-body">
-          <!-- Step indicators -->
-          <div class="steps">
-            <div class="step" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1">
-              <span class="step-number">1</span>
-              <span class="step-label">Info Básica</span>
-            </div>
-            <div class="step" [class.active]="currentStep() === 2" [class.completed]="currentStep() > 2">
-              <span class="step-number">2</span>
-              <span class="step-label">Ubicación</span>
-            </div>
-            <div class="step" [class.active]="currentStep() === 3" [class.completed]="currentStep() > 3">
-              <span class="step-number">3</span>
-              <span class="step-label">Características</span>
-            </div>
-            <div class="step" [class.active]="currentStep() === 4">
-              <span class="step-number">4</span>
-              <span class="step-label">Reglas</span>
-            </div>
+          <!-- Tabs -->
+          <div class="tabs">
+            <button type="button" class="tab" [class.active]="activeTab() === 'basic'" (click)="activeTab.set('basic')">
+              <i class="fas fa-home"></i> Información
+            </button>
+            <button type="button" class="tab" [class.active]="activeTab() === 'address'" (click)="activeTab.set('address')">
+              <i class="fas fa-map-marker-alt"></i> Ubicación
+            </button>
+            <button type="button" class="tab" [class.active]="activeTab() === 'features'" (click)="activeTab.set('features')">
+              <i class="fas fa-list"></i> Características
+            </button>
+            <button type="button" class="tab" [class.active]="activeTab() === 'rules'" (click)="activeTab.set('rules')">
+              <i class="fas fa-clipboard-list"></i> Reglas
+            </button>
           </div>
 
-          <!-- Step 1: Basic Info -->
-          @if (currentStep() === 1) {
-            <div class="step-content" formGroupName="basic">
+          <!-- Basic Info Tab -->
+          @if (activeTab() === 'basic') {
+            <div class="tab-content" formGroupName="basic">
               <div class="form-group">
                 <label for="title">Título de la propiedad *</label>
-                <input type="text" id="title" formControlName="title"
-                       placeholder="Ej: Departamento amoblado en Las Condes">
-                @if (form.get('basic.title')?.touched && form.get('basic.title')?.errors?.['required']) {
-                  <span class="error">El título es requerido</span>
-                }
+                <input type="text" id="title" formControlName="title">
               </div>
 
               <div class="form-group">
                 <label for="description">Descripción</label>
-                <textarea id="description" formControlName="description" rows="3"
-                          placeholder="Describe tu propiedad..."></textarea>
+                <textarea id="description" formControlName="description" rows="3"></textarea>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="type">Tipo de propiedad *</label>
                   <select id="type" formControlName="type">
-                    <option value="">Seleccionar</option>
                     <option value="APARTMENT">Departamento</option>
                     <option value="HOUSE">Casa</option>
                     <option value="STUDIO">Estudio</option>
@@ -72,22 +62,19 @@ import { PropertyType } from '../../../../core/models/property.model';
 
                 <div class="form-group">
                   <label for="monthlyRent">Arriendo mensual (CLP) *</label>
-                  <input type="number" id="monthlyRent" formControlName="monthlyRent"
-                         placeholder="350000">
+                  <input type="number" id="monthlyRent" formControlName="monthlyRent">
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="commonExpenses">Gastos comunes (CLP)</label>
-                  <input type="number" id="commonExpenses" formControlName="commonExpenses"
-                         placeholder="50000">
+                  <input type="number" id="commonExpenses" formControlName="commonExpenses">
                 </div>
 
                 <div class="form-group">
                   <label for="depositMonths">Meses de garantía</label>
-                  <input type="number" id="depositMonths" formControlName="depositMonths"
-                         placeholder="1" min="0" max="6">
+                  <input type="number" id="depositMonths" formControlName="depositMonths" min="0" max="6">
                 </div>
               </div>
 
@@ -99,41 +86,36 @@ import { PropertyType } from '../../../../core/models/property.model';
 
                 <div class="form-group">
                   <label for="minimumStay">Estadía mínima (meses)</label>
-                  <input type="number" id="minimumStay" formControlName="minimumStay"
-                         placeholder="6" min="1">
+                  <input type="number" id="minimumStay" formControlName="minimumStay" min="1">
                 </div>
               </div>
             </div>
           }
 
-          <!-- Step 2: Location -->
-          @if (currentStep() === 2) {
-            <div class="step-content" formGroupName="address">
+          <!-- Address Tab -->
+          @if (activeTab() === 'address') {
+            <div class="tab-content" formGroupName="address">
               <div class="form-row">
                 <div class="form-group flex-2">
                   <label for="street">Calle *</label>
-                  <input type="text" id="street" formControlName="street"
-                         placeholder="Ej: Av. Apoquindo">
+                  <input type="text" id="street" formControlName="street">
                 </div>
 
                 <div class="form-group">
                   <label for="number">Número *</label>
-                  <input type="text" id="number" formControlName="number"
-                         placeholder="1234">
+                  <input type="text" id="number" formControlName="number">
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="apartment">Depto/Oficina</label>
-                  <input type="text" id="apartment" formControlName="apartment"
-                         placeholder="Ej: 501">
+                  <input type="text" id="apartment" formControlName="apartment">
                 </div>
 
                 <div class="form-group">
                   <label for="comuna">Comuna *</label>
                   <select id="comuna" formControlName="comuna">
-                    <option value="">Seleccionar</option>
                     <option value="Santiago">Santiago</option>
                     <option value="Providencia">Providencia</option>
                     <option value="Las Condes">Las Condes</option>
@@ -156,59 +138,41 @@ import { PropertyType } from '../../../../core/models/property.model';
               <div class="form-row">
                 <div class="form-group">
                   <label for="city">Ciudad *</label>
-                  <input type="text" id="city" formControlName="city" value="Santiago">
+                  <input type="text" id="city" formControlName="city">
                 </div>
 
                 <div class="form-group">
                   <label for="region">Región *</label>
-                  <input type="text" id="region" formControlName="region" value="Metropolitana">
+                  <input type="text" id="region" formControlName="region">
                 </div>
-              </div>
-
-              <div class="form-group">
-                <label for="zipCode">Código Postal</label>
-                <input type="text" id="zipCode" formControlName="zipCode"
-                       placeholder="7550000">
               </div>
             </div>
           }
 
-          <!-- Step 3: Features -->
-          @if (currentStep() === 3) {
-            <div class="step-content" formGroupName="features">
+          <!-- Features Tab -->
+          @if (activeTab() === 'features') {
+            <div class="tab-content" formGroupName="features">
               <div class="form-row">
                 <div class="form-group">
                   <label for="totalRooms">Total habitaciones *</label>
-                  <input type="number" id="totalRooms" formControlName="totalRooms"
-                         min="1" max="20">
+                  <input type="number" id="totalRooms" formControlName="totalRooms" min="1" max="20">
                 </div>
 
                 <div class="form-group">
                   <label for="availableRooms">Hab. disponibles *</label>
-                  <input type="number" id="availableRooms" formControlName="availableRooms"
-                         min="0" max="20">
+                  <input type="number" id="availableRooms" formControlName="availableRooms" min="0" max="20">
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="bathrooms">Baños *</label>
-                  <input type="number" id="bathrooms" formControlName="bathrooms"
-                         min="1" max="10">
+                  <input type="number" id="bathrooms" formControlName="bathrooms" min="1" max="10">
                 </div>
 
                 <div class="form-group">
                   <label for="squareMeters">Metros cuadrados *</label>
-                  <input type="number" id="squareMeters" formControlName="squareMeters"
-                         min="10" max="1000">
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="floor">Piso</label>
-                  <input type="number" id="floor" formControlName="floor"
-                         min="0" max="50">
+                  <input type="number" id="squareMeters" formControlName="squareMeters" min="10">
                 </div>
               </div>
 
@@ -289,9 +253,9 @@ import { PropertyType } from '../../../../core/models/property.model';
             </div>
           }
 
-          <!-- Step 4: Rules -->
-          @if (currentStep() === 4) {
-            <div class="step-content" formGroupName="rules">
+          <!-- Rules Tab -->
+          @if (activeTab() === 'rules') {
+            <div class="tab-content" formGroupName="rules">
               <h4 class="section-title">Reglas de la propiedad</h4>
               <div class="checkbox-grid rules">
                 <label class="checkbox-item">
@@ -324,27 +288,6 @@ import { PropertyType } from '../../../../core/models/property.model';
                   <span>Fiestas permitidas</span>
                 </label>
               </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="maxOccupants">Máximo de ocupantes</label>
-                  <input type="number" id="maxOccupants" formControlName="maxOccupants"
-                         min="1" max="20" placeholder="4">
-                </div>
-              </div>
-
-              <h4 class="section-title">Horas de silencio (opcional)</h4>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="quietHoursStart">Desde</label>
-                  <input type="time" id="quietHoursStart" formControlName="quietHoursStart">
-                </div>
-
-                <div class="form-group">
-                  <label for="quietHoursEnd">Hasta</label>
-                  <input type="time" id="quietHoursEnd" formControlName="quietHoursEnd">
-                </div>
-              </div>
             </div>
           }
 
@@ -355,27 +298,37 @@ import { PropertyType } from '../../../../core/models/property.model';
             </div>
           }
 
-          <div class="modal-footer">
-            @if (currentStep() > 1) {
-              <button type="button" class="btn btn-secondary" (click)="previousStep()">
-                <i class="fas fa-arrow-left me-2"></i>Anterior
-              </button>
-            }
+          @if (successMessage()) {
+            <div class="success-message">
+              <i class="fas fa-check-circle"></i>
+              {{ successMessage() }}
+            </div>
+          }
 
-            @if (currentStep() < 4) {
-              <button type="button" class="btn btn-primary" (click)="nextStep()"
-                      [disabled]="!isCurrentStepValid()">
-                Siguiente<i class="fas fa-arrow-right ms-2"></i>
-              </button>
-            } @else {
-              <button type="submit" class="btn btn-success" [disabled]="loading() || !form.valid">
-                @if (loading()) {
-                  <i class="fas fa-spinner fa-spin me-2"></i>Creando...
-                } @else {
-                  <i class="fas fa-check me-2"></i>Crear Propiedad
-                }
-              </button>
-            }
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-danger" (click)="toggleStatus()" [disabled]="statusLoading()">
+              @if (statusLoading()) {
+                <i class="fas fa-spinner fa-spin"></i>
+              } @else if (property.status === 'INACTIVE') {
+                <i class="fas fa-check"></i> Activar
+              } @else {
+                <i class="fas fa-ban"></i> Desactivar
+              }
+            </button>
+
+            <div class="spacer"></div>
+
+            <button type="button" class="btn btn-secondary" (click)="onClose()">
+              Cancelar
+            </button>
+
+            <button type="submit" class="btn btn-primary" [disabled]="loading() || !form.valid">
+              @if (loading()) {
+                <i class="fas fa-spinner fa-spin"></i> Guardando...
+              } @else {
+                <i class="fas fa-save"></i> Guardar Cambios
+              }
+            </button>
           </div>
         </form>
       </div>
@@ -413,39 +366,30 @@ import { PropertyType } from '../../../../core/models/property.model';
       padding: 1.5rem; overflow-y: auto; flex: 1;
     }
 
-    .steps {
-      display: flex; gap: 0.5rem; margin-bottom: 2rem;
+    .tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 1.5rem;
+      border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;
     }
 
-    .step {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      padding: 0.75rem; border-radius: 0.5rem; background: #f9fafb;
-      transition: all 0.2s;
+    .tab {
+      flex: 1; padding: 0.75rem; border: none; background: #f9fafb;
+      border-radius: 0.5rem; font-weight: 500; color: #6b7280;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 0.5rem; transition: all 0.2s;
+      font-size: 0.8125rem;
 
       &.active {
-        background: #d1fae5;
-        .step-number { background: #10b981; color: white; }
-        .step-label { color: #059669; }
+        background: #10b981; color: white;
       }
 
-      &.completed {
-        background: #ecfdf5;
-        .step-number { background: #10b981; color: white; }
+      &:hover:not(.active) {
+        background: #e5e7eb;
       }
+
+      i { font-size: 0.875rem; }
     }
 
-    .step-number {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: #e5e7eb; display: flex; align-items: center;
-      justify-content: center; font-size: 0.875rem; font-weight: 600;
-      color: #6b7280; margin-bottom: 0.25rem;
-    }
-
-    .step-label {
-      font-size: 0.75rem; color: #6b7280; font-weight: 500;
-    }
-
-    .step-content {
+    .tab-content {
       min-height: 300px;
     }
 
@@ -462,7 +406,6 @@ import { PropertyType } from '../../../../core/models/property.model';
         &:focus { outline: none; border-color: #10b981; }
       }
       textarea { resize: vertical; }
-      .error { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; }
     }
 
     .form-row {
@@ -507,17 +450,26 @@ import { PropertyType } from '../../../../core/models/property.model';
       i { margin-right: 0.5rem; }
     }
 
+    .success-message {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      color: #16a34a; padding: 0.75rem 1rem; border-radius: 0.5rem;
+      margin-top: 1rem; font-size: 0.875rem;
+      i { margin-right: 0.5rem; }
+    }
+
     .modal-footer {
-      display: flex; justify-content: flex-end; gap: 1rem;
+      display: flex; align-items: center; gap: 1rem;
       padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb;
       background: #f9fafb;
+
+      .spacer { flex: 1; }
     }
 
     .btn {
       padding: 0.75rem 1.5rem; border-radius: 0.5rem;
       font-weight: 600; cursor: pointer; border: none;
-      display: inline-flex; align-items: center;
-      transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: all 0.2s; font-size: 0.875rem;
       &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
 
@@ -527,120 +479,126 @@ import { PropertyType } from '../../../../core/models/property.model';
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-      &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+      background: #10b981; color: white;
+      &:hover:not(:disabled) { background: #059669; }
     }
 
-    .btn-success {
-      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-      color: white;
-      &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+    .btn-outline-danger {
+      background: white; border: 1px solid #ef4444; color: #ef4444;
+      &:hover:not(:disabled) { background: #fef2f2; }
     }
-
-    .me-2 { margin-right: 0.5rem; }
-    .ms-2 { margin-left: 0.5rem; }
 
     @media (max-width: 640px) {
       .form-row { flex-direction: column; gap: 0; }
       .checkbox-grid { grid-template-columns: repeat(2, 1fr); }
       .checkbox-grid.rules { grid-template-columns: 1fr; }
-      .steps { flex-wrap: wrap; }
-      .step { flex: 1 1 45%; }
+      .tabs { flex-wrap: wrap; }
+      .tab { flex: 1 1 45%; font-size: 0.75rem; padding: 0.5rem; }
     }
   `]
 })
-export class CrearPropiedadComponent {
+export class EditarPropiedadComponent implements OnInit {
+  @Input({ required: true }) property!: Property;
   @Output() close = new EventEmitter<void>();
-  @Output() created = new EventEmitter<void>();
+  @Output() updated = new EventEmitter<void>();
 
   private fb = inject(FormBuilder);
   private propertyService = inject(PropertyService);
 
-  currentStep = signal(1);
+  activeTab = signal<'basic' | 'address' | 'features' | 'rules'>('basic');
   loading = signal(false);
+  statusLoading = signal(false);
   errorMessage = signal('');
+  successMessage = signal('');
 
-  form: FormGroup = this.fb.group({
-    basic: this.fb.group({
-      title: ['', Validators.required],
-      description: [''],
-      type: ['', Validators.required],
-      monthlyRent: ['', [Validators.required, Validators.min(1)]],
-      commonExpenses: [0],
-      depositMonths: [1],
-      availableFrom: [''],
-      minimumStay: [6]
-    }),
-    address: this.fb.group({
-      street: ['', Validators.required],
-      number: ['', Validators.required],
-      apartment: [''],
-      comuna: ['', Validators.required],
-      city: ['Santiago', Validators.required],
-      region: ['Metropolitana', Validators.required],
-      zipCode: ['']
-    }),
-    features: this.fb.group({
-      totalRooms: [1, [Validators.required, Validators.min(1)]],
-      availableRooms: [1, [Validators.required, Validators.min(0)]],
-      bathrooms: [1, [Validators.required, Validators.min(1)]],
-      squareMeters: [50, [Validators.required, Validators.min(10)]],
-      floor: [null],
-      hasElevator: [false],
-      hasParking: [false],
-      hasFurniture: [false],
-      hasWifi: [false],
-      hasAC: [false],
-      hasHeating: [false],
-      hasWasher: [false],
-      hasDryer: [false],
-      hasBalcony: [false],
-      hasTerrace: [false],
-      hasGarden: [false],
-      hasSecurity: [false]
-    }),
-    rules: this.fb.group({
-      petsAllowed: [false],
-      smokingAllowed: [false],
-      childrenAllowed: [true],
-      guestsAllowed: [true],
-      partiesAllowed: [false],
-      maxOccupants: [null],
-      quietHoursStart: [''],
-      quietHoursEnd: ['']
-    })
-  });
+  form!: FormGroup;
+
+  ngOnInit() {
+    this.initForm();
+  }
+
+  private initForm() {
+    const p = this.property;
+    const addr = p.address || {} as any;
+    const feat = p.features || {} as any;
+    const rules = p.rules || {} as any;
+
+    this.form = this.fb.group({
+      basic: this.fb.group({
+        title: [p.title, Validators.required],
+        description: [p.description || ''],
+        type: [p.type, Validators.required],
+        monthlyRent: [p.monthlyRent, [Validators.required, Validators.min(1)]],
+        commonExpenses: [(p as any).commonExpenses || 0],
+        depositMonths: [(p as any).depositMonths || 1],
+        availableFrom: [p.availableFrom ? new Date(p.availableFrom).toISOString().split('T')[0] : ''],
+        minimumStay: [(p as any).minimumStay || 6]
+      }),
+      address: this.fb.group({
+        street: [addr.street || '', Validators.required],
+        number: [addr.number || '', Validators.required],
+        apartment: [addr.apartment || ''],
+        comuna: [addr.comuna || '', Validators.required],
+        city: [addr.city || 'Santiago', Validators.required],
+        region: [addr.region || 'Metropolitana', Validators.required]
+      }),
+      features: this.fb.group({
+        totalRooms: [feat.totalRooms || 1, [Validators.required, Validators.min(1)]],
+        availableRooms: [feat.availableRooms || 1, [Validators.required, Validators.min(0)]],
+        bathrooms: [feat.bathrooms || 1, [Validators.required, Validators.min(1)]],
+        squareMeters: [feat.squareMeters || 50, [Validators.required, Validators.min(10)]],
+        hasElevator: [feat.hasElevator || false],
+        hasParking: [feat.hasParking || false],
+        hasFurniture: [feat.hasFurniture || false],
+        hasWifi: [feat.hasWifi || false],
+        hasAC: [feat.hasAC || false],
+        hasHeating: [feat.hasHeating || false],
+        hasWasher: [feat.hasWasher || false],
+        hasDryer: [feat.hasDryer || false],
+        hasBalcony: [feat.hasBalcony || false],
+        hasTerrace: [feat.hasTerrace || false],
+        hasGarden: [feat.hasGarden || false],
+        hasSecurity: [feat.hasSecurity || false]
+      }),
+      rules: this.fb.group({
+        petsAllowed: [rules.petsAllowed || false],
+        smokingAllowed: [rules.smokingAllowed || false],
+        childrenAllowed: [rules.childrenAllowed ?? true],
+        guestsAllowed: [rules.guestsAllowed ?? true],
+        partiesAllowed: [rules.partiesAllowed || false]
+      })
+    });
+  }
 
   onClose() {
     this.close.emit();
   }
 
-  nextStep() {
-    if (this.isCurrentStepValid() && this.currentStep() < 4) {
-      this.currentStep.update(s => s + 1);
-    }
-  }
+  toggleStatus() {
+    this.statusLoading.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
-  previousStep() {
-    if (this.currentStep() > 1) {
-      this.currentStep.update(s => s - 1);
-    }
-  }
+    const newStatus = this.property.status === PropertyStatus.INACTIVE
+      ? PropertyStatus.AVAILABLE
+      : PropertyStatus.INACTIVE;
 
-  isCurrentStepValid(): boolean {
-    switch (this.currentStep()) {
-      case 1:
-        return this.form.get('basic')?.valid ?? false;
-      case 2:
-        return this.form.get('address')?.valid ?? false;
-      case 3:
-        return this.form.get('features')?.valid ?? false;
-      case 4:
-        return true;
-      default:
-        return false;
-    }
+    this.propertyService.updateStatus(this.property.id, newStatus).subscribe({
+      next: () => {
+        this.property.status = newStatus;
+        this.statusLoading.set(false);
+        this.successMessage.set(newStatus === PropertyStatus.INACTIVE
+          ? 'Propiedad desactivada'
+          : 'Propiedad activada');
+        setTimeout(() => {
+          this.updated.emit();
+        }, 1000);
+      },
+      error: (err) => {
+        this.statusLoading.set(false);
+        this.errorMessage.set(err.error?.message || 'Error al cambiar el estado');
+      }
+    });
   }
 
   onSubmit() {
@@ -651,9 +609,10 @@ export class CrearPropiedadComponent {
 
     this.loading.set(true);
     this.errorMessage.set('');
+    this.successMessage.set('');
 
     const formValue = this.form.value;
-    const dto: CreatePropertyDto = {
+    const updateData = {
       title: formValue.basic.title,
       description: formValue.basic.description || undefined,
       type: formValue.basic.type as PropertyType,
@@ -668,15 +627,13 @@ export class CrearPropiedadComponent {
         apartment: formValue.address.apartment || undefined,
         comuna: formValue.address.comuna,
         city: formValue.address.city,
-        region: formValue.address.region,
-        zipCode: formValue.address.zipCode || undefined
+        region: formValue.address.region
       },
       features: {
         totalRooms: Number(formValue.features.totalRooms),
         availableRooms: Number(formValue.features.availableRooms),
         bathrooms: Number(formValue.features.bathrooms),
         squareMeters: Number(formValue.features.squareMeters),
-        floor: formValue.features.floor ? Number(formValue.features.floor) : undefined,
         hasElevator: formValue.features.hasElevator,
         hasParking: formValue.features.hasParking,
         hasFurniture: formValue.features.hasFurniture,
@@ -695,23 +652,22 @@ export class CrearPropiedadComponent {
         smokingAllowed: formValue.rules.smokingAllowed,
         childrenAllowed: formValue.rules.childrenAllowed,
         guestsAllowed: formValue.rules.guestsAllowed,
-        partiesAllowed: formValue.rules.partiesAllowed,
-        maxOccupants: formValue.rules.maxOccupants ? Number(formValue.rules.maxOccupants) : undefined,
-        quietHoursStart: formValue.rules.quietHoursStart || undefined,
-        quietHoursEnd: formValue.rules.quietHoursEnd || undefined
-      },
-      images: []
+        partiesAllowed: formValue.rules.partiesAllowed
+      }
     };
 
-    this.propertyService.createProperty(dto).subscribe({
+    this.propertyService.updateProperty(this.property.id, updateData).subscribe({
       next: () => {
         this.loading.set(false);
-        this.created.emit();
-        this.close.emit();
+        this.successMessage.set('Propiedad actualizada correctamente');
+        setTimeout(() => {
+          this.updated.emit();
+          this.close.emit();
+        }, 1000);
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.message || 'Error al crear la propiedad');
+        this.errorMessage.set(err.error?.message || 'Error al actualizar la propiedad');
       }
     });
   }

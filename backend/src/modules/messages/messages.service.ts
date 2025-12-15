@@ -126,7 +126,8 @@ export class MessagesService {
       throw new ForbiddenException('No tienes acceso a esta conversación');
     }
 
-    const { page = 1, limit = 50 } = filters;
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 50;
 
     const [messages, total] = await Promise.all([
       prisma.message.findMany({

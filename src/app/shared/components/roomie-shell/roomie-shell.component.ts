@@ -23,6 +23,9 @@ import { AuthService } from '../../../core/services/auth.service';
               <a routerLink="/roomie/buscar" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-search"></i> Buscar
               </a>
+              <a routerLink="/roomie/explorar" routerLinkActive="active" class="nav-link">
+                <i class="fas fa-fire"></i> Explorar
+              </a>
               <a routerLink="/roomie/solicitudes" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-paper-plane"></i> Mis Solicitudes
               </a>
@@ -82,6 +85,9 @@ import { AuthService } from '../../../core/services/auth.service';
             </a>
             <a routerLink="/roomie/buscar" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-search"></i> Buscar
+            </a>
+            <a routerLink="/roomie/explorar" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
+              <i class="fas fa-fire"></i> Explorar
             </a>
             <a routerLink="/roomie/solicitudes" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-paper-plane"></i> Mis Solicitudes

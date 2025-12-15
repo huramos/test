@@ -11,7 +11,7 @@ import {
   Max
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PropertyType, PropertyStatus } from '@prisma/client';
+import { PropertyType, PropertyStatus, RentalType } from '@prisma/client';
 
 class AddressDto {
   @IsString()
@@ -169,6 +169,10 @@ export class CreatePropertyDto {
   @IsEnum(PropertyType, { message: 'Tipo de propiedad inválido' })
   type: PropertyType;
 
+  @IsOptional()
+  @IsEnum(RentalType, { message: 'Tipo de arriendo inválido' })
+  rentalType?: RentalType;
+
   @ValidateNested()
   @Type(() => AddressDto)
   address: AddressDto;
@@ -222,6 +226,10 @@ export class UpdatePropertyDto {
   @IsOptional()
   @IsEnum(PropertyType)
   type?: PropertyType;
+
+  @IsOptional()
+  @IsEnum(RentalType)
+  rentalType?: RentalType;
 
   @IsOptional()
   @IsEnum(PropertyStatus)
@@ -283,6 +291,10 @@ export class PropertyFilterDto {
   @IsOptional()
   @IsEnum(PropertyType)
   type?: PropertyType;
+
+  @IsOptional()
+  @IsEnum(RentalType)
+  rentalType?: RentalType;
 
   @IsOptional()
   @IsEnum(PropertyStatus)

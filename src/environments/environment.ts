@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3001/api/v1',
+  apiUrl: 'https://u7btj2e8d6.execute-api.us-east-1.amazonaws.com/dev/api/v1',
   firebase: {
     projectId: 'room-match-cl',
     appId: '1:848093296666:web:8bc2882f8c33c43d2bb9a3',

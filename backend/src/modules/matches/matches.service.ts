@@ -9,7 +9,9 @@ import {
 
 export class MatchesService {
   async findByRoomie(roomieId: string, filters: MatchFilterDto) {
-    const { status, page = 1, limit = 10 } = filters;
+    const { status } = filters;
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
 
     const where: any = { roomieId };
 
@@ -64,7 +66,9 @@ export class MatchesService {
   }
 
   async findByOwner(ownerId: string, filters: MatchFilterDto) {
-    const { status, page = 1, limit = 10 } = filters;
+    const { status } = filters;
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
 
     const where: any = {
       room: {

@@ -40,10 +40,11 @@ import { Property, PropertyType, PropertyStatus } from '../../../core/models/pro
           <label>Tipo</label>
           <select [(ngModel)]="filters.type" (change)="applyFilters()">
             <option value="">Todos</option>
-            <option value="DEPARTAMENTO">Departamento</option>
-            <option value="CASA">Casa</option>
-            <option value="HABITACION">Habitación</option>
-            <option value="ESTUDIO">Estudio</option>
+            <option value="APARTMENT">Departamento</option>
+            <option value="HOUSE">Casa</option>
+            <option value="STUDIO">Estudio</option>
+            <option value="LOFT">Loft</option>
+            <option value="SHARED_APARTMENT">Depto. Compartido</option>
           </select>
         </div>
         <div class="filter-group checkbox">
@@ -318,10 +319,11 @@ export class BuscarComponent implements OnInit {
 
   getTypeLabel(type: PropertyType | string): string {
     const labels: Record<string, string> = {
-      'DEPARTAMENTO': 'Departamento',
-      'CASA': 'Casa',
-      'HABITACION': 'Habitación',
-      'ESTUDIO': 'Estudio'
+      'APARTMENT': 'Departamento',
+      'HOUSE': 'Casa',
+      'STUDIO': 'Estudio',
+      'LOFT': 'Loft',
+      'SHARED_APARTMENT': 'Depto. Compartido'
     };
     return labels[type] || type;
   }

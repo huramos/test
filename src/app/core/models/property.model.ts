@@ -1,8 +1,9 @@
 export enum PropertyType {
-  DEPARTAMENTO = 'DEPARTAMENTO',
-  CASA = 'CASA',
-  HABITACION = 'HABITACION',
-  ESTUDIO = 'ESTUDIO'
+  APARTMENT = 'APARTMENT',
+  HOUSE = 'HOUSE',
+  STUDIO = 'STUDIO',
+  LOFT = 'LOFT',
+  SHARED_APARTMENT = 'SHARED_APARTMENT'
 }
 
 export enum PropertyStatus {
@@ -26,6 +27,8 @@ export interface Property {
   monthlyRent: number;
   expenses?: number;
   availableFrom: Date;
+  isVerified?: boolean;
+  views?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +36,7 @@ export interface Property {
 export interface PropertyAddress {
   street: string;
   number: string;
+  apartment?: string;
   comuna: string;
   city: string;
   region: string;
@@ -72,10 +76,13 @@ export interface PropertyRules {
   smokingAllowed: boolean;
   petsAllowed: boolean;
   partiesAllowed: boolean;
-  visitorsAllowed: boolean;
+  visitorsAllowed?: boolean;
+  guestsAllowed?: boolean;
+  childrenAllowed?: boolean;
   quietHoursStart?: string;
   quietHoursEnd?: string;
   minStayMonths?: number;
+  maxOccupants?: number;
   genderPreference?: 'male' | 'female' | 'any';
   studentsOnly?: boolean;
   workersOnly?: boolean;

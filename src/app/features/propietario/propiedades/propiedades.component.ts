@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { PropertyService } from '../../../core/services/property.service';
 import { Property, PropertyStatus } from '../../../core/models/property.model';
 import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.component';
+import { EditarPropiedadComponent } from './editar-propiedad/editar-propiedad.component';
 
 @Component({
   selector: 'app-propiedades',
   standalone: true,
-  imports: [CommonModule, CrearPropiedadComponent],
+  imports: [CommonModule, CrearPropiedadComponent, EditarPropiedadComponent],
   template: `
     <div class="page-container">
       <div class="page-header">
@@ -28,7 +29,7 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
       } @else {
         <div class="properties-grid">
           @for (property of properties(); track property.id) {
-            <div class="property-card">
+            <div class="property-card" [class.inactive]="property.status === 'INACTIVE'">
               <div class="property-image">
                 @if (property.images && property.images.length > 0) {
                   <img [src]="property.images[0]" [alt]="property.title">
@@ -40,6 +41,11 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
                 <span class="status-badge" [class]="property.status.toLowerCase()">
                   {{ getStatusLabel(property.status) }}
                 </span>
+                @if (property.isVerified) {
+                  <span class="verified-badge" title="Propiedad verificada">
+                    <i class="fas fa-check-circle"></i>
+                  </span>
+                }
               </div>
               <div class="property-content">
                 <h3>{{ property.title }}</h3>
@@ -56,21 +62,23 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
                     <i class="fas fa-bath"></i>
                     <span>{{ property.features.bathrooms }} baños</span>
                   </div>
-                  <div class="stat">
-                    <i class="fas fa-ruler-combined"></i>
-                    <span>{{ property.features.squareMeters }} m²</span>
-                  </div>
+                  @if (property.features.squareMeters) {
+                    <div class="stat">
+                      <i class="fas fa-ruler-combined"></i>
+                      <span>{{ property.features.squareMeters }} m²</span>
+                    </div>
+                  }
+                </div>
+                <div class="property-meta">
+                  <span class="views" title="Vistas">
+                    <i class="fas fa-eye"></i> {{ property.views || 0 }}
+                  </span>
                 </div>
                 <div class="property-footer">
                   <span class="price">\${{ property.monthlyRent | number }}/mes</span>
-                  <div class="actions">
-                    <button class="btn-icon" title="Editar">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-icon" title="Ver habitaciones">
-                      <i class="fas fa-door-open"></i>
-                    </button>
-                  </div>
+                  <button class="btn btn-edit" title="Editar propiedad" (click)="editProperty(property)">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
                 </div>
               </div>
             </div>
@@ -104,6 +112,14 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
         (created)="onPropertyCreated()">
       </app-crear-propiedad>
     }
+
+    @if (editingProperty()) {
+      <app-editar-propiedad
+        [property]="editingProperty()!"
+        (close)="editingProperty.set(null)"
+        (updated)="onPropertyUpdated()">
+      </app-editar-propiedad>
+    }
   `,
   styles: [`
     .page-container { padding: 2rem; max-width: 1400px; margin: 0 auto; }
@@ -114,11 +130,11 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
       p { color: #6b7280; margin: 0; }
     }
     .btn-primary {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: #10b981;
       border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem;
       color: white; font-weight: 600; cursor: pointer;
       display: inline-flex; align-items: center; transition: all 0.2s;
-      &:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+      &:hover { background: #059669; }
     }
     .btn-secondary {
       background: white; border: 1px solid #d1d5db; padding: 0.5rem 1rem;
@@ -144,6 +160,7 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
       background: white; border-radius: 1rem; overflow: hidden;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
       &:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+      &.inactive { opacity: 0.7; }
     }
     .property-image {
       height: 200px; position: relative;
@@ -158,9 +175,15 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
         padding: 0.375rem 0.75rem; border-radius: 0.5rem;
         font-size: 0.75rem; font-weight: 600;
         &.available { background: #d1fae5; color: #059669; }
-        &.occupied { background: #fee2e2; color: #dc2626; }
+        &.occupied { background: #dbeafe; color: #2563eb; }
         &.inactive { background: #e5e7eb; color: #6b7280; }
-        &.pending_verification { background: #fef3c7; color: #d97706; }
+      }
+      .verified-badge {
+        position: absolute; top: 1rem; right: 1rem;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: white; color: #10b981;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
     }
     .property-content { padding: 1.25rem;
@@ -169,21 +192,28 @@ import { CrearPropiedadComponent } from './crear-propiedad/crear-propiedad.compo
         i { color: #10b981; margin-right: 0.5rem; }
       }
     }
-    .property-stats { display: flex; gap: 1.5rem; margin-bottom: 1rem;
+    .property-stats { display: flex; gap: 1.5rem; margin-bottom: 0.75rem;
       .stat { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #6b7280;
         i { color: #9ca3af; }
       }
     }
+    .property-meta {
+      margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb;
+      .views {
+        font-size: 0.8125rem; color: #9ca3af;
+        display: inline-flex; align-items: center; gap: 0.25rem;
+      }
+    }
     .property-footer { display: flex; justify-content: space-between; align-items: center;
       .price { font-size: 1.25rem; font-weight: 700; color: #10b981; }
-      .actions { display: flex; gap: 0.5rem; }
     }
-    .btn-icon {
-      width: 36px; height: 36px; border-radius: 0.5rem;
-      border: 1px solid #e5e7eb; background: white;
-      display: flex; align-items: center; justify-content: center;
-      color: #6b7280; cursor: pointer; transition: all 0.2s;
-      &:hover { border-color: #10b981; color: #10b981; }
+    .btn-edit {
+      padding: 0.5rem 1rem; border-radius: 0.5rem;
+      border: 1px solid #d1d5db; background: white;
+      display: flex; align-items: center; gap: 0.5rem;
+      color: #374151; cursor: pointer; transition: all 0.2s;
+      font-size: 0.875rem; font-weight: 500;
+      &:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
     }
     .empty-state {
       grid-column: 1 / -1; text-align: center; padding: 4rem 2rem;
@@ -206,6 +236,7 @@ export class PropiedadesComponent implements OnInit {
   loading = signal(false);
   error = signal('');
   showCreateModal = signal(false);
+  editingProperty = signal<Property | null>(null);
 
   ngOnInit() {
     this.loadProperties();
@@ -228,15 +259,23 @@ export class PropiedadesComponent implements OnInit {
   }
 
   onPropertyCreated() {
+    this.showCreateModal.set(false);
     this.loadProperties();
+  }
+
+  onPropertyUpdated() {
+    this.loadProperties();
+  }
+
+  editProperty(property: Property) {
+    this.editingProperty.set(property);
   }
 
   getStatusLabel(status: PropertyStatus | string): string {
     const labels: Record<string, string> = {
       'AVAILABLE': 'Disponible',
       'OCCUPIED': 'Ocupado',
-      'INACTIVE': 'Inactivo',
-      'PENDING_VERIFICATION': 'Pendiente'
+      'INACTIVE': 'Inactivo'
     };
     return labels[status] || status;
   }
