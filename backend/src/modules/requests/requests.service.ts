@@ -1,4 +1,4 @@
-import { RequestStatus, RequestType, RoomStatus, MatchStatus, UserRole } from '@prisma/client';
+import { RequestStatus, RequestType, RoomStatus, MatchStatus, UserRole, RentalType, PropertyStatus, BedType } from '@prisma/client';
 import prisma from '../../config/prisma';
 import { CreateRequestDto, RespondRequestDto, RequestFilterDto } from './requests.dto';
 import {
@@ -10,9 +10,60 @@ import {
 
 export class RequestsService {
   async create(requesterId: string, dto: CreateRequestDto) {
+    let roomId = dto.roomId;
+
+    // If propertyId is provided instead of roomId, find or create a room
+    if (!roomId && dto.propertyId) {
+      const property = await prisma.property.findUnique({
+        where: { id: dto.propertyId },
+        include: { rooms: { where: { status: RoomStatus.AVAILABLE } } }
+      });
+
+      if (!property) {
+        throw new NotFoundException('Propiedad no encontrada');
+      }
+
+      if (property.status !== PropertyStatus.AVAILABLE) {
+        throw new BadRequestException('La propiedad no está disponible');
+      }
+
+      // Check if property owner is trying to request their own property
+      if (property.ownerId === requesterId) {
+        throw new BadRequestException('No puedes enviar una solicitud a tu propia propiedad');
+      }
+
+      // Find or create a room based on rental type
+      if (property.rooms.length > 0) {
+        // Use the first available room
+        roomId = property.rooms[0].id;
+      } else {
+        // Create a default room for this property (especially for ENTIRE type)
+        const newRoom = await prisma.room.create({
+          data: {
+            propertyId: property.id,
+            name: property.rentalType === RentalType.ENTIRE ? 'Propiedad Completa' : 'Habitación Principal',
+            description: property.rentalType === RentalType.ENTIRE
+              ? 'Arriendo de la propiedad completa'
+              : 'Habitación principal disponible',
+            status: RoomStatus.AVAILABLE,
+            monthlyRent: property.monthlyRent,
+            bedType: BedType.DOUBLE,
+            hasPrivateBathroom: true,
+            isFurnished: true,
+            availableFrom: property.availableFrom
+          }
+        });
+        roomId = newRoom.id;
+      }
+    }
+
+    if (!roomId) {
+      throw new BadRequestException('Debes proporcionar roomId o propertyId');
+    }
+
     // Verify room exists
     const room = await prisma.room.findUnique({
-      where: { id: dto.roomId },
+      where: { id: roomId },
       include: { property: true }
     });
 
@@ -24,10 +75,15 @@ export class RequestsService {
       throw new BadRequestException('La habitación no está disponible');
     }
 
+    // Check if property owner is trying to request their own room
+    if (room.property.ownerId === requesterId) {
+      throw new BadRequestException('No puedes enviar una solicitud a tu propia propiedad');
+    }
+
     // Check if user already has a pending request for this room
     const existingRequest = await prisma.roomRequest.findFirst({
       where: {
-        roomId: dto.roomId,
+        roomId: roomId,
         requesterId,
         status: RequestStatus.PENDING
       }
@@ -43,12 +99,19 @@ export class RequestsService {
 
     const request = await prisma.roomRequest.create({
       data: {
-        ...dto,
+        roomId: roomId,
         requesterId,
         type: dto.type || RequestType.ROOM_REQUEST,
         status: RequestStatus.PENDING,
+        message: dto.message,
         proposedMoveIn: dto.proposedMoveIn ? new Date(dto.proposedMoveIn) : null,
+        proposedStayMonths: dto.proposedStayMonths,
         expiresAt
+      },
+      include: {
+        room: {
+          include: { property: true }
+        }
       }
     });
 

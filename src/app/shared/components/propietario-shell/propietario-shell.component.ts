@@ -1,7 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { MessageService } from '../../../core/services/message.service';
+import { RequestService } from '../../../core/services/request.service';
+import { MatchService } from '../../../core/services/match.service';
 
 @Component({
   selector: 'app-propietario-shell',
@@ -31,9 +34,15 @@ import { AuthService } from '../../../core/services/auth.service';
               </a>
               <a routerLink="/propietario/matches" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-handshake"></i> Matches
+                @if (activeMatches() > 0) {
+                  <span class="badge success">{{ activeMatches() }}</span>
+                }
               </a>
               <a routerLink="/propietario/mensajes" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-comments"></i> Mensajes
+                @if (unreadMessages() > 0) {
+                  <span class="badge">{{ unreadMessages() }}</span>
+                }
               </a>
             </nav>
           </div>
@@ -87,9 +96,15 @@ import { AuthService } from '../../../core/services/auth.service';
             </a>
             <a routerLink="/propietario/matches" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-handshake"></i> Matches
+              @if (activeMatches() > 0) {
+                <span class="badge success">{{ activeMatches() }}</span>
+              }
             </a>
             <a routerLink="/propietario/mensajes" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-comments"></i> Mensajes
+              @if (unreadMessages() > 0) {
+                <span class="badge">{{ unreadMessages() }}</span>
+              }
             </a>
           </nav>
           <div class="mobile-menu-footer">
@@ -172,6 +187,7 @@ import { AuthService } from '../../../core/services/auth.service';
           padding: 0.125rem 0.5rem;
           border-radius: 1rem;
           font-weight: 600;
+          &.success { background: #10b981; }
         }
 
         &:hover {
@@ -409,11 +425,17 @@ import { AuthService } from '../../../core/services/auth.service';
     }
   `]
 })
-export class PropietarioShellComponent {
+export class PropietarioShellComponent implements OnInit {
   private authService = inject(AuthService);
+  private messageService = inject(MessageService);
+  private requestService = inject(RequestService);
+  private matchService = inject(MatchService);
+
   sidebarOpen = signal(false);
   userMenuOpen = signal(false);
-  pendingRequests = signal(3);
+  pendingRequests = signal(0);
+  activeMatches = signal(0);
+  unreadMessages = signal(0);
 
   userName = signal('');
   userAvatar = signal<string | null>(null);
@@ -424,6 +446,30 @@ export class PropietarioShellComponent {
       this.userName.set(`${user.firstName} ${user.lastName}`);
       this.userAvatar.set(user.avatar || null);
     }
+  }
+
+  ngOnInit() {
+    this.loadCounts();
+  }
+
+  private loadCounts() {
+    // Load unread messages count
+    this.messageService.getUnreadCount().subscribe({
+      next: (data) => this.unreadMessages.set(data.unread || 0),
+      error: () => this.unreadMessages.set(0)
+    });
+
+    // Load pending requests count (received requests)
+    this.requestService.getReceivedRequests({ status: 'PENDING' }).subscribe({
+      next: (response) => this.pendingRequests.set(response.meta?.total || 0),
+      error: () => this.pendingRequests.set(0)
+    });
+
+    // Load active matches count
+    this.matchService.getMyMatches({ status: 'ACTIVE' }).subscribe({
+      next: (response) => this.activeMatches.set(response.meta?.total || 0),
+      error: () => this.activeMatches.set(0)
+    });
   }
 
   toggleSidebar() {

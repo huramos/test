@@ -1,7 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { MessageService } from '../../../core/services/message.service';
+import { RequestService } from '../../../core/services/request.service';
+import { MatchService } from '../../../core/services/match.service';
 
 @Component({
   selector: 'app-roomie-shell',
@@ -28,9 +31,15 @@ import { AuthService } from '../../../core/services/auth.service';
               </a>
               <a routerLink="/roomie/solicitudes" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-paper-plane"></i> Mis Solicitudes
+                @if (pendingRequests() > 0) {
+                  <span class="badge">{{ pendingRequests() }}</span>
+                }
               </a>
               <a routerLink="/roomie/matches" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-handshake"></i> Matches
+                @if (activeMatches() > 0) {
+                  <span class="badge success">{{ activeMatches() }}</span>
+                }
               </a>
               <a routerLink="/roomie/mensajes" routerLinkActive="active" class="nav-link">
                 <i class="fas fa-comments"></i> Mensajes
@@ -91,9 +100,15 @@ import { AuthService } from '../../../core/services/auth.service';
             </a>
             <a routerLink="/roomie/solicitudes" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-paper-plane"></i> Mis Solicitudes
+              @if (pendingRequests() > 0) {
+                <span class="badge">{{ pendingRequests() }}</span>
+              }
             </a>
             <a routerLink="/roomie/matches" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-handshake"></i> Matches
+              @if (activeMatches() > 0) {
+                <span class="badge success">{{ activeMatches() }}</span>
+              }
             </a>
             <a routerLink="/roomie/mensajes" routerLinkActive="active" class="nav-link" (click)="closeSidebar()">
               <i class="fas fa-comments"></i> Mensajes
@@ -182,6 +197,7 @@ import { AuthService } from '../../../core/services/auth.service';
           padding: 0.125rem 0.5rem;
           border-radius: 1rem;
           font-weight: 600;
+          &.success { background: #10b981; }
         }
 
         &:hover {
@@ -419,11 +435,17 @@ import { AuthService } from '../../../core/services/auth.service';
     }
   `]
 })
-export class RoomieShellComponent {
+export class RoomieShellComponent implements OnInit {
   private authService = inject(AuthService);
+  private messageService = inject(MessageService);
+  private requestService = inject(RequestService);
+  private matchService = inject(MatchService);
+
   sidebarOpen = signal(false);
   userMenuOpen = signal(false);
-  unreadMessages = signal(1);
+  unreadMessages = signal(0);
+  pendingRequests = signal(0);
+  activeMatches = signal(0);
 
   userName = signal('');
   userAvatar = signal<string | null>(null);
@@ -434,6 +456,30 @@ export class RoomieShellComponent {
       this.userName.set(`${user.firstName} ${user.lastName}`);
       this.userAvatar.set(user.avatar || null);
     }
+  }
+
+  ngOnInit() {
+    this.loadCounts();
+  }
+
+  private loadCounts() {
+    // Load unread messages count
+    this.messageService.getUnreadCount().subscribe({
+      next: (data) => this.unreadMessages.set(data.unread || 0),
+      error: () => this.unreadMessages.set(0)
+    });
+
+    // Load pending requests count
+    this.requestService.getMyRequests({ status: 'PENDING' }).subscribe({
+      next: (response) => this.pendingRequests.set(response.meta?.total || 0),
+      error: () => this.pendingRequests.set(0)
+    });
+
+    // Load active matches count
+    this.matchService.getMyMatches({ status: 'ACTIVE' }).subscribe({
+      next: (response) => this.activeMatches.set(response.meta?.total || 0),
+      error: () => this.activeMatches.set(0)
+    });
   }
 
   toggleSidebar() {

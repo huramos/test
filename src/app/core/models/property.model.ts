@@ -12,6 +12,11 @@ export enum PropertyStatus {
   INACTIVE = 'INACTIVE'
 }
 
+export enum RentalType {
+  ENTIRE = 'ENTIRE',
+  BY_ROOMS = 'BY_ROOMS'
+}
+
 export interface Property {
   id: string;
   ownerId: string;
@@ -19,6 +24,7 @@ export interface Property {
   description: string;
   type: PropertyType;
   status: PropertyStatus;
+  rentalType?: RentalType;
   address: PropertyAddress;
   features: PropertyFeatures;
   rules: PropertyRules;

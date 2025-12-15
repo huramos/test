@@ -8,7 +8,7 @@ import { MatchService, Match, MatchStatus } from '../../../core/services/match.s
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="page-container">
+    <div class="container py-4">
       <div class="page-header">
         <h1>Mis Matches</h1>
         <p>Conexiones confirmadas con propietarios</p>
@@ -191,7 +191,6 @@ import { MatchService, Match, MatchStatus } from '../../../core/services/match.s
     }
   `,
   styles: [`
-    .page-container { padding: 2rem; max-width: 900px; margin: 0 auto; }
     .page-header { margin-bottom: 1.5rem;
       h1 { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0 0 0.25rem; }
       p { color: #6b7280; margin: 0; }

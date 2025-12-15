@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PropertyService, PropertyFilterParams } from '../../../core/services/property.service';
+import { RequestService } from '../../../core/services/request.service';
 import { Property, PropertyType, PropertyStatus } from '../../../core/models/property.model';
 
 @Component({
@@ -9,7 +10,7 @@ import { Property, PropertyType, PropertyStatus } from '../../../core/models/pro
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="page-container">
+    <div class="container py-4">
       <div class="page-header">
         <h1>Buscar Propiedades</h1>
         <p>Encuentra tu próximo hogar</p>
@@ -133,9 +134,67 @@ import { Property, PropertyType, PropertyStatus } from '../../../core/models/pro
         </div>
       }
     </div>
+
+    <!-- Request Modal -->
+    @if (requestProperty()) {
+      <div class="modal-backdrop" (click)="closeRequestModal()">
+        <div class="modal-container" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>Enviar Solicitud</h2>
+            <button class="close-btn" (click)="closeRequestModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="property-preview">
+              @if (requestProperty()?.images && requestProperty()!.images.length > 0) {
+                <img [src]="requestProperty()!.images[0]" [alt]="requestProperty()?.title">
+              } @else {
+                <div class="no-img"><i class="fas fa-home"></i></div>
+              }
+              <div class="preview-info">
+                <h4>{{ requestProperty()?.title }}</h4>
+                <p>{{ requestProperty()?.address?.comuna }}, {{ requestProperty()?.address?.city }}</p>
+                <strong>\${{ requestProperty()?.monthlyRent | number }}/mes</strong>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Mensaje (opcional)</label>
+              <textarea #messageInput rows="3" placeholder="Cuéntale al propietario por qué estás interesado..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" (click)="closeRequestModal()">Cancelar</button>
+            <button class="btn btn-primary" (click)="confirmRequest(messageInput.value)" [disabled]="sendingRequest()">
+              @if (sendingRequest()) {
+                <i class="fas fa-spinner fa-spin"></i>
+              } @else {
+                <i class="fas fa-paper-plane"></i>
+              }
+              Enviar Solicitud
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Success Message -->
+    @if (successMessage()) {
+      <div class="toast success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage() }}</span>
+      </div>
+    }
+
+    <!-- Error Message -->
+    @if (errorMessage()) {
+      <div class="toast error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
   `,
   styles: [`
-    .page-container { padding: 2rem; max-width: 1400px; margin: 0 auto; }
     .page-header { margin-bottom: 1.5rem;
       h1 { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0 0 0.25rem; }
       p { color: #6b7280; margin: 0; }
@@ -251,14 +310,78 @@ import { Property, PropertyType, PropertyStatus } from '../../../core/models/pro
       p { color: #6b7280; margin: 0; }
     }
     @media (max-width: 768px) {
-      .page-container { padding: 1rem; }
       .filters-section { flex-direction: column; }
       .filter-group { width: 100%; }
+    }
+
+    /* Modal styles */
+    .modal-backdrop {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); display: flex; align-items: center;
+      justify-content: center; z-index: 1000; padding: 1rem;
+    }
+    .modal-container {
+      background: white; border-radius: 1rem; width: 100%; max-width: 480px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb;
+      h2 { margin: 0; font-size: 1.125rem; font-weight: 600; }
+    }
+    .close-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: #f3f4f6; cursor: pointer; color: #6b7280;
+      &:hover { background: #e5e7eb; }
+    }
+    .modal-body { padding: 1.5rem; }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+      padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb;
+      background: #f9fafb; border-radius: 0 0 1rem 1rem;
+    }
+    .property-preview {
+      display: flex; gap: 1rem; margin-bottom: 1.5rem;
+      padding: 1rem; background: #f9fafb; border-radius: 0.75rem;
+      img { width: 80px; height: 60px; border-radius: 0.5rem; object-fit: cover; }
+      .no-img { width: 80px; height: 60px; background: #e5e7eb; border-radius: 0.5rem;
+        display: flex; align-items: center; justify-content: center;
+        i { color: #d1d5db; }
+      }
+      .preview-info { flex: 1;
+        h4 { font-size: 0.9375rem; font-weight: 600; margin: 0 0 0.25rem; }
+        p { font-size: 0.8125rem; color: #6b7280; margin: 0 0 0.25rem; }
+        strong { font-size: 0.875rem; color: #059669; }
+      }
+    }
+    .form-group {
+      label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem; }
+      textarea {
+        width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
+        font-size: 0.9375rem; resize: vertical; font-family: inherit;
+        &:focus { outline: none; border-color: #f59e0b; }
+      }
+    }
+
+    /* Toast messages */
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem;
+      border-radius: 0.5rem; display: flex; align-items: center; gap: 0.75rem;
+      font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: slideIn 0.3s ease;
+      z-index: 2000;
+      &.success { background: #10b981; color: white; }
+      &.error { background: #ef4444; color: white; }
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
   `]
 })
 export class BuscarComponent implements OnInit {
   private propertyService = inject(PropertyService);
+  private requestService = inject(RequestService);
 
   properties = signal<Property[]>([]);
   comunas = signal<string[]>([
@@ -268,6 +391,12 @@ export class BuscarComponent implements OnInit {
   ]);
   loading = signal(false);
   error = signal('');
+
+  // Request modal state
+  requestProperty = signal<Property | null>(null);
+  sendingRequest = signal(false);
+  successMessage = signal('');
+  errorMessage = signal('');
 
   filters: PropertyFilterParams = {
     comuna: '',
@@ -329,7 +458,43 @@ export class BuscarComponent implements OnInit {
   }
 
   sendRequest(property: Property) {
-    console.log('Enviar solicitud a:', property.title);
-    // TODO: Implement request sending
+    this.requestProperty.set(property);
+  }
+
+  closeRequestModal() {
+    this.requestProperty.set(null);
+  }
+
+  confirmRequest(message: string) {
+    const property = this.requestProperty();
+    if (!property) return;
+
+    this.sendingRequest.set(true);
+    this.errorMessage.set('');
+
+    this.requestService.createRequest({
+      propertyId: property.id,
+      message: message.trim() || undefined
+    }).subscribe({
+      next: () => {
+        this.sendingRequest.set(false);
+        this.closeRequestModal();
+        this.showSuccess('Solicitud enviada exitosamente');
+      },
+      error: (err) => {
+        this.sendingRequest.set(false);
+        this.showError(err.error?.message || 'Error al enviar la solicitud');
+      }
+    });
+  }
+
+  private showSuccess(message: string) {
+    this.successMessage.set(message);
+    setTimeout(() => this.successMessage.set(''), 4000);
+  }
+
+  private showError(message: string) {
+    this.errorMessage.set(message);
+    setTimeout(() => this.errorMessage.set(''), 4000);
   }
 }

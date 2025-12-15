@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { PropertyService } from '../../../core/services/property.service';
+import { RequestService } from '../../../core/services/request.service';
 import { Property, PropertyStatus } from '../../../core/models/property.model';
 
 @Component({
@@ -540,6 +541,7 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
 export class PropietarioDashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private propertyService = inject(PropertyService);
+  private requestService = inject(RequestService);
 
   userName = signal('');
   totalProperties = signal(0);
@@ -592,8 +594,11 @@ export class PropietarioDashboardComponent implements OnInit {
   }
 
   private loadStats() {
-    // TODO: Load pending requests from API when available
-    this.pendingRequests.set(0);
+    // Load pending requests count (received requests for propietario)
+    this.requestService.getReceivedRequests({ status: 'PENDING' }).subscribe({
+      next: (response) => this.pendingRequests.set(response.meta?.total || 0),
+      error: () => this.pendingRequests.set(0)
+    });
   }
 
   getStatusLabel(status: PropertyStatus | string): string {

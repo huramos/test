@@ -18,6 +18,7 @@ import roomsRoutes from './modules/rooms/rooms.routes';
 import requestsRoutes from './modules/requests/requests.routes';
 import matchesRoutes from './modules/matches/matches.routes';
 import messagesRoutes from './modules/messages/messages.routes';
+import favoritesRoutes from './modules/favorites/favorites.routes';
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.use('/api/v1/rooms', roomsRoutes);
 app.use('/api/v1/requests', requestsRoutes);
 app.use('/api/v1/matches', matchesRoutes);
 app.use('/api/v1/messages', messagesRoutes);
+app.use('/api/v1/favorites', favoritesRoutes);
 
 // 404 handler
 app.use('/api/v1/*', (req, res) => {

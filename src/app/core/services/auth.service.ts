@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, from, of } from 'rxjs';
+import { BehaviorSubject, Observable, from, of, firstValueFrom } from 'rxjs';
 import { map, switchMap, tap, catchError } from 'rxjs/operators';
 import {
   Auth,
@@ -37,6 +37,9 @@ export class AuthService {
   private loadingSubject = new BehaviorSubject<boolean>(true);
   public loading$ = this.loadingSubject.asObservable();
 
+  // Flag to prevent sync during registration
+  private isRegistering = false;
+
   private apiUrl = environment.apiUrl;
 
   constructor() {
@@ -47,6 +50,14 @@ export class AuthService {
     onAuthStateChanged(this.auth, async (firebaseUser) => {
       console.log('[AuthService] Firebase auth state changed:', firebaseUser?.email);
       this.firebaseUserSubject.next(firebaseUser);
+
+      // Skip sync if we're in the middle of registration
+      if (this.isRegistering) {
+        console.log('[AuthService] Skipping sync - registration in progress');
+        this.loadingSubject.next(false);
+        this.authInitializedSubject.next(true);
+        return;
+      }
 
       if (firebaseUser) {
         try {
@@ -72,10 +83,12 @@ export class AuthService {
 
   private async syncUserWithBackend(firebaseUser: FirebaseUser): Promise<SyncUserResponse> {
     const token = await firebaseUser.getIdToken();
-    return this.http.post<SyncUserResponse>(
-      `${this.apiUrl}/auth/sync`,
-      { firebaseToken: token }
-    ).toPromise() as Promise<SyncUserResponse>;
+    return firstValueFrom(
+      this.http.post<SyncUserResponse>(
+        `${this.apiUrl}/auth/sync`,
+        { firebaseToken: token }
+      )
+    );
   }
 
   async getIdToken(): Promise<string | null> {
@@ -154,21 +167,27 @@ export class AuthService {
       const token = await this.getIdToken();
 
       if (!token) {
+        this.isRegistering = false;
         return {
           success: false,
           message: 'No hay sesión de Firebase activa'
         };
       }
 
-      const response = await this.http.post<User>(
-        `${this.apiUrl}/auth/register`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      ).toPromise();
+      const response = await firstValueFrom(
+        this.http.post<User>(
+          `${this.apiUrl}/auth/register`,
+          data,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        )
+      );
 
+      // Update current user and mark auth as initialized
       this.currentUserSubject.next(response!);
+      this.authInitializedSubject.next(true);
+
       return {
         success: true,
         message: 'Registro exitoso',
@@ -181,12 +200,15 @@ export class AuthService {
         message: error.error?.message || 'Error al registrar usuario'
       };
     } finally {
+      this.isRegistering = false; // Always reset the flag
       this.loadingSubject.next(false);
     }
   }
 
   async createFirebaseAccount(email: string, password: string): Promise<{ success: boolean; message: string; firebaseUid?: string }> {
     try {
+      // Set flag to prevent sync during registration
+      this.isRegistering = true;
       const credential = await createUserWithEmailAndPassword(this.auth, email, password);
       return {
         success: true,
@@ -195,6 +217,7 @@ export class AuthService {
       };
     } catch (error: any) {
       console.error('[AuthService] Create Firebase account error:', error);
+      this.isRegistering = false; // Reset flag on error
       return {
         success: false,
         message: this.getFirebaseErrorMessage(error.code)
@@ -282,13 +305,15 @@ export class AuthService {
         return { success: false, message: 'No autenticado' };
       }
 
-      const response = await this.http.patch<User>(
-        `${this.apiUrl}/auth/profile`,
-        userData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      ).toPromise();
+      const response = await firstValueFrom(
+        this.http.patch<User>(
+          `${this.apiUrl}/auth/profile`,
+          userData,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        )
+      );
 
       const currentUser = this.currentUserSubject.value;
       if (currentUser && response) {

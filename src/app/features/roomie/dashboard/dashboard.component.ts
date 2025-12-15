@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { PropertyService } from '../../../core/services/property.service';
+import { RequestService } from '../../../core/services/request.service';
+import { MatchService } from '../../../core/services/match.service';
+import { FavoriteService } from '../../../core/services/favorite.service';
 import { Property, PropertyStatus } from '../../../core/models/property.model';
 
 @Component({
@@ -10,7 +13,7 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="dashboard-container">
+    <div class="container py-4">
       <div class="dashboard-header">
         <div>
           <h1>Hola, {{ userName() }}</h1>
@@ -64,7 +67,7 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
         </div>
       </div>
 
-      <!-- Quick Profile -->
+      <!-- Quick Profile - Hidden for now
       <div class="profile-banner">
         <div class="profile-content">
           <i class="fas fa-lightbulb"></i>
@@ -75,6 +78,7 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
         </div>
         <a routerLink="/roomie/preferencias" class="btn btn-outline">Completar Preferencias</a>
       </div>
+      -->
 
       <div class="dashboard-content">
         <!-- Propiedades Recomendadas -->
@@ -155,12 +159,6 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
     </div>
   `,
   styles: [`
-    .dashboard-container {
-      padding: 2rem;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
     .dashboard-header {
       display: flex;
       justify-content: space-between;
@@ -405,7 +403,6 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
     }
 
     @media (max-width: 640px) {
-      .dashboard-container { padding: 1rem; }
       .dashboard-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .profile-banner {
@@ -418,6 +415,9 @@ import { Property, PropertyStatus } from '../../../core/models/property.model';
 export class RoomieDashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private propertyService = inject(PropertyService);
+  private requestService = inject(RequestService);
+  private matchService = inject(MatchService);
+  private favoriteService = inject(FavoriteService);
 
   userName = signal('');
   sentRequests = signal(0);
@@ -452,10 +452,36 @@ export class RoomieDashboardComponent implements OnInit {
       }
     });
 
-    // TODO: Load requests and stats from API when endpoints are ready
-    this.sentRequests.set(0);
-    this.pendingRequests.set(0);
-    this.activeMatches.set(0);
-    this.favorites.set(0);
+    // Load request stats
+    this.requestService.getStats().subscribe({
+      next: (stats) => {
+        this.sentRequests.set(stats.total || 0);
+        this.pendingRequests.set(stats.pending || 0);
+      },
+      error: () => {
+        this.sentRequests.set(0);
+        this.pendingRequests.set(0);
+      }
+    });
+
+    // Load match stats
+    this.matchService.getStats().subscribe({
+      next: (stats) => {
+        this.activeMatches.set(stats.active || 0);
+      },
+      error: () => {
+        this.activeMatches.set(0);
+      }
+    });
+
+    // Load favorites count
+    this.favoriteService.getFavoritesCount().subscribe({
+      next: (data) => {
+        this.favorites.set(data.count || 0);
+      },
+      error: () => {
+        this.favorites.set(0);
+      }
+    });
   }
 }

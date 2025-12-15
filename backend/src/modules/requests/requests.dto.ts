@@ -9,8 +9,13 @@ import { Type } from 'class-transformer';
 import { RequestStatus, RequestType } from '@prisma/client';
 
 export class CreateRequestDto {
-  @IsString({ message: 'El ID de la habitación es requerido' })
-  roomId: string;
+  @IsOptional()
+  @IsString()
+  roomId?: string;
+
+  @IsOptional()
+  @IsString()
+  propertyId?: string;
 
   @IsOptional()
   @IsEnum(RequestType)

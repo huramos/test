@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PropertyService } from '../../../core/services/property.service';
 import { RequestService } from '../../../core/services/request.service';
+import { FavoriteService } from '../../../core/services/favorite.service';
 import { Property, PropertyStatus } from '../../../core/models/property.model';
 
 interface SwipeProperty extends Property {
@@ -16,7 +17,7 @@ interface SwipeProperty extends Property {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="explore-container">
+    <div class="container py-4 explore-container">
       <div class="explore-header">
         <h1>Explorar Propiedades</h1>
         <p>Desliza para encontrar tu próximo hogar</p>
@@ -257,8 +258,9 @@ interface SwipeProperty extends Property {
     }
   `,
   styles: [`
-    .explore-container { padding: 1rem; max-width: 500px; margin: 0 auto; min-height: calc(100vh - 64px); display: flex; flex-direction: column; }
+    .explore-container { min-height: calc(100vh - 64px); display: flex; flex-direction: column; align-items: center; }
     .explore-header {
+      width: 100%; max-width: 500px;
       display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem;
       h1 { font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 0; flex: 1; }
       p { width: 100%; color: #6b7280; margin: 0; font-size: 0.875rem; order: 3; }
@@ -270,6 +272,7 @@ interface SwipeProperty extends Property {
         &:hover { background: #fee2e2; }
       }
     }
+    .swipe-container { width: 100%; max-width: 500px; }
     .loading-state {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
       color: #6b7280; gap: 1rem;
@@ -469,12 +472,15 @@ interface SwipeProperty extends Property {
 export class ExplorarComponent implements OnInit {
   private propertyService = inject(PropertyService);
   private requestService = inject(RequestService);
+  private favoriteService = inject(FavoriteService);
 
   properties = signal<SwipeProperty[]>([]);
   savedProperties = signal<Property[]>([]);
+  savedPropertyIds = signal<Set<string>>(new Set());
   skippedIds = signal<Set<string>>(new Set());
   currentIndex = signal(0);
   loading = signal(false);
+  loadingFavorites = signal(false);
   currentImageIndex = signal(0);
 
   // Swipe state
@@ -489,8 +495,25 @@ export class ExplorarComponent implements OnInit {
   sendingRequest = signal(false);
 
   ngOnInit() {
-    this.loadSavedFromStorage();
+    this.loadFavorites();
     this.loadProperties();
+  }
+
+  private loadFavorites() {
+    this.loadingFavorites.set(true);
+    this.favoriteService.getMyFavorites({ limit: 100 }).subscribe({
+      next: (response) => {
+        const favorites = response.data || [];
+        const properties = favorites.map(f => f.property).filter(p => p) as Property[];
+        const ids = new Set(favorites.map(f => f.propertyId));
+        this.savedProperties.set(properties);
+        this.savedPropertyIds.set(ids);
+        this.loadingFavorites.set(false);
+      },
+      error: () => {
+        this.loadingFavorites.set(false);
+      }
+    });
   }
 
   loadProperties() {
@@ -498,8 +521,9 @@ export class ExplorarComponent implements OnInit {
 
     this.propertyService.getProperties({ status: PropertyStatus.AVAILABLE, limit: 50 }).subscribe({
       next: (response) => {
+        const savedIds = this.savedPropertyIds();
         const filtered = (response.data || []).filter(p =>
-          !this.savedProperties().some(s => s.id === p.id) &&
+          !savedIds.has(p.id) &&
           !this.skippedIds().has(p.id)
         );
         this.properties.set(filtered);
@@ -605,8 +629,16 @@ export class ExplorarComponent implements OnInit {
 
     setTimeout(() => {
       if (direction === 'right') {
-        this.savedProperties.update(saved => [...saved, property]);
-        this.saveSavedToStorage();
+        // Add to favorites via API
+        this.favoriteService.addFavorite(property.id).subscribe({
+          next: () => {
+            this.savedProperties.update(saved => [...saved, property]);
+            this.savedPropertyIds.update(ids => new Set([...ids, property.id]));
+          },
+          error: (err) => {
+            console.error('Error adding favorite:', err);
+          }
+        });
       } else {
         this.skippedIds.update(ids => new Set([...ids, property.id]));
       }
@@ -646,8 +678,19 @@ export class ExplorarComponent implements OnInit {
   }
 
   removeFromSaved(property: Property) {
-    this.savedProperties.update(saved => saved.filter(p => p.id !== property.id));
-    this.saveSavedToStorage();
+    this.favoriteService.removeFavorite(property.id).subscribe({
+      next: () => {
+        this.savedProperties.update(saved => saved.filter(p => p.id !== property.id));
+        this.savedPropertyIds.update(ids => {
+          const newIds = new Set(ids);
+          newIds.delete(property.id);
+          return newIds;
+        });
+      },
+      error: (err) => {
+        console.error('Error removing favorite:', err);
+      }
+    });
   }
 
   sendRequest(property: Property) {
@@ -663,18 +706,24 @@ export class ExplorarComponent implements OnInit {
     const property = this.requestProperty();
     if (!property) return;
 
-    // Need a room ID - for now we'll use the first available room
-    // In a real implementation, you'd let the user select a room
     this.sendingRequest.set(true);
 
-    // Assuming we have rooms data, for now just show success
-    // This would need to be updated when rooms are available
-    setTimeout(() => {
-      this.sendingRequest.set(false);
-      this.closeRequestModal();
-      this.removeFromSaved(property);
-      alert('Solicitud enviada exitosamente');
-    }, 1000);
+    this.requestService.createRequest({
+      propertyId: property.id,
+      message: message.trim() || undefined
+    }).subscribe({
+      next: () => {
+        this.sendingRequest.set(false);
+        this.closeRequestModal();
+        this.removeFromSaved(property);
+        // Show success message - could be improved with a toast
+        alert('Solicitud enviada exitosamente');
+      },
+      error: (err) => {
+        this.sendingRequest.set(false);
+        alert(err.error?.message || 'Error al enviar la solicitud');
+      }
+    });
   }
 
   resetAndReload() {
@@ -694,16 +743,4 @@ export class ExplorarComponent implements OnInit {
     return labels[type] || type;
   }
 
-  private saveSavedToStorage() {
-    localStorage.setItem('rm_saved_properties', JSON.stringify(this.savedProperties()));
-  }
-
-  private loadSavedFromStorage() {
-    const saved = localStorage.getItem('rm_saved_properties');
-    if (saved) {
-      try {
-        this.savedProperties.set(JSON.parse(saved));
-      } catch {}
-    }
-  }
 }

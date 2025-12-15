@@ -73,7 +73,7 @@ export class RequestService {
     return this.http.get<RoomRequest>(`${this.baseUrl}/${id}`);
   }
 
-  createRequest(data: { roomId: string; message?: string; proposedMoveIn?: string; proposedStayMonths?: number }): Observable<RoomRequest> {
+  createRequest(data: { roomId?: string; propertyId?: string; message?: string; proposedMoveIn?: string; proposedStayMonths?: number }): Observable<RoomRequest> {
     return this.http.post<RoomRequest>(this.baseUrl, data);
   }
 

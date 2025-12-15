@@ -7,7 +7,7 @@ import { RequestService, RoomRequest } from '../../../core/services/request.serv
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="page-container">
+    <div class="container py-4">
       <div class="page-header">
         <h1>Mis Solicitudes</h1>
         <p>Seguimiento de tus solicitudes enviadas</p>
@@ -98,7 +98,6 @@ import { RequestService, RoomRequest } from '../../../core/services/request.serv
     </div>
   `,
   styles: [`
-    .page-container { padding: 2rem; max-width: 900px; margin: 0 auto; }
     .page-header { margin-bottom: 1.5rem;
       h1 { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0 0 0.25rem; }
       p { color: #6b7280; margin: 0; }
